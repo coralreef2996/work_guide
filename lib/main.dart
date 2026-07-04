@@ -1026,13 +1026,13 @@ class _TaskSelectionScreenState extends State<TaskSelectionScreen> {
                                   borderRadius: BorderRadius.circular(10),
                                 ),
                               ),
-                              // 中のバー（水色）
+                              // 中のバー（明るいオレンジ）
                               FractionallySizedBox(
                                 widthFactor: progress.clamp(0.0, 1.0),
                                 child: Container(
                                   height: 30,
                                   decoration: BoxDecoration(
-                                    color: const Color(0xFF00FFFF),
+                                    color: const Color(0xFFFF9800),
                                     borderRadius: BorderRadius.circular(10),
                                   ),
                                 ),
@@ -3319,6 +3319,485 @@ class _EditChatbotScreenState extends State<EditChatbotScreen> {
 }
 
 // ==========================================
+// SP・称号・バッジ編集画面
+// ==========================================
+class EditSpScreen extends StatefulWidget {
+  final String selectedTask;
+  final Map<String, dynamic> initialSpData;
+
+  const EditSpScreen({
+    super.key,
+    required this.selectedTask,
+    required this.initialSpData,
+  });
+
+  @override
+  State<EditSpScreen> createState() => _EditSpScreenState();
+}
+
+class _EditSpScreenState extends State<EditSpScreen> {
+  int _selectedLevel = 1;
+  late Map<int, String> _levelTitles;
+  late TextEditingController _titleController;
+
+  late String _selectedGoalCategory;
+  int _selectedGoalLevel = 1;
+  final Map<String, List<Map<String, dynamic>>> _categoryGoals = {};
+  final Map<String, List<TextEditingController>> _goalTitleControllers = {};
+  final Map<String, List<TextEditingController>> _goalSpControllers = {};
+
+  String _getGoalKey(String category, int level) => "${category}_Lv$level";
+
+  @override
+  void initState() {
+    super.initState();
+
+    final currentTitle = widget.initialSpData['titleName'] as String? ?? 'マスター';
+    final currentLevel = widget.initialSpData['totalLevel'] as int? ?? 1;
+
+    _levelTitles = {
+      1: 'ビギナー',
+      2: 'ルーキー',
+      3: '見習い',
+      4: 'チャレンジャー',
+      5: 'アシスタント',
+      6: '中級者',
+      7: '実力派',
+      8: 'エキスパート',
+      9: 'ベテラン',
+      10: 'スペシャリスト',
+      11: 'プロフェッショナル',
+      12: 'エース',
+      13: 'トップランカー',
+      14: 'マスタリー',
+      15: '3Dジェネラリスト',
+      16: '新進気鋭イラストレーター',
+      17: '次世代サウンドクリエイター',
+      18: '凄腕ビデオディレクター',
+      19: 'データプロフェッショナル',
+      20: 'レジェンドマスター',
+    };
+
+    if (widget.initialSpData.containsKey('levelTitles')) {
+      final savedTitles = widget.initialSpData['levelTitles'] as Map;
+      savedTitles.forEach((key, value) {
+        final intKey = int.tryParse(key.toString());
+        if (intKey != null) {
+          _levelTitles[intKey] = value.toString();
+        }
+      });
+    } else if (currentLevel >= 1 && currentLevel <= 20) {
+      _levelTitles[currentLevel] = currentTitle;
+    }
+
+    _selectedLevel = currentLevel.clamp(1, 20);
+    _titleController = TextEditingController(text: _levelTitles[_selectedLevel]);
+
+    _initGoalsData();
+  }
+
+  void _initGoalsData() {
+    final skillsSp = Map<String, dynamic>.from(widget.initialSpData['skillsSp'] ?? {'画力': 0, '創造性': 0, '構成力': 0, '表現力': 0, '集中力': 0, '効率性': 0});
+    final categories = skillsSp.keys.toList();
+    _selectedGoalCategory = categories.isNotEmpty ? categories.first : '画力';
+    _selectedGoalLevel = _selectedLevel;
+
+    if (widget.initialSpData.containsKey('categoryGoals')) {
+      final savedGoals = widget.initialSpData['categoryGoals'] as Map;
+      savedGoals.forEach((key, list) {
+        if (list is List) {
+          _categoryGoals[key.toString()] = list.map((g) => Map<String, dynamic>.from(g as Map)).toList();
+        }
+      });
+    }
+
+    for (var cat in categories) {
+      for (int lvl = 1; lvl <= 20; lvl++) {
+        final key = _getGoalKey(cat, lvl);
+        if (!_categoryGoals.containsKey(key)) {
+          _categoryGoals[key] = _generateDefaultGoals(cat, lvl);
+        }
+      }
+    }
+
+    _loadAllGoalControllers();
+  }
+
+  List<Map<String, dynamic>> _generateDefaultGoals(String cat, int lvl) {
+    if (lvl <= 5) {
+      return [
+        {'title': '$cat の基本操作と準備を丁寧に行った（初級）', 'sp': 15},
+        {'title': '$cat の入門手順を順番通りに実践した（初級）', 'sp': 20},
+      ];
+    } else if (lvl <= 10) {
+      return [
+        {'title': '$cat の基礎技術を意識して作業を行った（中級）', 'sp': 25},
+        {'title': '$cat の品質向上のための工夫を取り入れた（中級）', 'sp': 30},
+      ];
+    } else {
+      return [
+        {'title': '$cat の高度な応用技術を完璧にマスターした（上級）', 'sp': 35},
+        {'title': '$cat のプロレベルの仕上がりと効率化を達成した（上級）', 'sp': 40},
+      ];
+    }
+  }
+
+  void _loadAllGoalControllers() {
+    _goalTitleControllers.forEach((_, list) => list.forEach((c) => c.dispose()));
+    _goalSpControllers.forEach((_, list) => list.forEach((c) => c.dispose()));
+    _goalTitleControllers.clear();
+    _goalSpControllers.clear();
+
+    _categoryGoals.forEach((key, goals) {
+      _goalTitleControllers[key] = [];
+      _goalSpControllers[key] = [];
+      for (var g in goals) {
+        _goalTitleControllers[key]!.add(TextEditingController(text: g['title'] as String? ?? ''));
+        _goalSpControllers[key]!.add(TextEditingController(text: (g['sp'] ?? 20).toString()));
+      }
+    });
+  }
+
+  void _syncCurrentControllersToData() {
+    final key = _getGoalKey(_selectedGoalCategory, _selectedGoalLevel);
+    final goals = _categoryGoals[key] ?? [];
+    final tControllers = _goalTitleControllers[key] ?? [];
+    final sControllers = _goalSpControllers[key] ?? [];
+
+    for (int i = 0; i < goals.length; i++) {
+      if (i < tControllers.length) goals[i]['title'] = tControllers[i].text;
+      if (i < sControllers.length) goals[i]['sp'] = int.tryParse(sControllers[i].text) ?? 20;
+    }
+  }
+
+  @override
+  void dispose() {
+    _titleController.dispose();
+    _goalTitleControllers.values.forEach((list) => list.forEach((c) => c.dispose()));
+    _goalSpControllers.values.forEach((list) => list.forEach((c) => c.dispose()));
+    super.dispose();
+  }
+
+  void _onLevelChanged(int? newLevel) {
+    if (newLevel != null) {
+      _levelTitles[_selectedLevel] = _titleController.text;
+      setState(() {
+        _selectedLevel = newLevel;
+        _titleController.text = _levelTitles[_selectedLevel] ?? '';
+      });
+    }
+  }
+
+  void _addGoal() {
+    _syncCurrentControllersToData();
+    final key = _getGoalKey(_selectedGoalCategory, _selectedGoalLevel);
+    setState(() {
+      if (!_categoryGoals.containsKey(key)) {
+        _categoryGoals[key] = [];
+      }
+      if (!_goalTitleControllers.containsKey(key)) {
+        _goalTitleControllers[key] = [];
+      }
+      if (!_goalSpControllers.containsKey(key)) {
+        _goalSpControllers[key] = [];
+      }
+      final newGoal = {'title': '', 'sp': 25};
+      _categoryGoals[key]!.add(newGoal);
+      _goalTitleControllers[key]!.add(TextEditingController(text: ''));
+      _goalSpControllers[key]!.add(TextEditingController(text: '25'));
+    });
+  }
+
+  void _removeGoal(int index) {
+    _syncCurrentControllersToData();
+    final key = _getGoalKey(_selectedGoalCategory, _selectedGoalLevel);
+    setState(() {
+      if (_categoryGoals.containsKey(key) && index < _categoryGoals[key]!.length) {
+        _categoryGoals[key]!.removeAt(index);
+      }
+      if (_goalTitleControllers.containsKey(key) && index < _goalTitleControllers[key]!.length) {
+        _goalTitleControllers[key]!.removeAt(index).dispose();
+      }
+      if (_goalSpControllers.containsKey(key) && index < _goalSpControllers[key]!.length) {
+        _goalSpControllers[key]!.removeAt(index).dispose();
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final skillsSp = Map<String, dynamic>.from(widget.initialSpData['skillsSp'] ?? {'画力': 0, '創造性': 0, '構成力': 0, '表現力': 0, '集中力': 0, '効率性': 0});
+    final categories = skillsSp.keys.toList();
+
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('SP編集（${widget.selectedTask}）'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.save),
+            onPressed: () {
+              _levelTitles[_selectedLevel] = _titleController.text;
+
+              _categoryGoals.forEach((cat, goals) {
+                final tControllers = _goalTitleControllers[cat] ?? [];
+                final sControllers = _goalSpControllers[cat] ?? [];
+                for (int i = 0; i < goals.length; i++) {
+                  if (i < tControllers.length) goals[i]['title'] = tControllers[i].text;
+                  if (i < sControllers.length) goals[i]['sp'] = int.tryParse(sControllers[i].text) ?? 20;
+                }
+              });
+
+              final updatedSpData = Map<String, dynamic>.from(widget.initialSpData);
+              updatedSpData['titleName'] = _levelTitles[_selectedLevel];
+              updatedSpData['totalLevel'] = _selectedLevel;
+              updatedSpData['levelTitles'] = _levelTitles;
+              updatedSpData['categoryGoals'] = _categoryGoals;
+
+              Navigator.pop(context, updatedSpData);
+            },
+          ),
+        ],
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Card(
+              elevation: 2,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'レベル別 称号設定',
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 8),
+                    const Text(
+                      '編集したいレベルを選択し、対応する称号名を入力してください。',
+                      style: TextStyle(color: Colors.grey, fontSize: 13),
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      children: [
+                        const Text(
+                          '対象レベル: ',
+                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                        ),
+                        const SizedBox(width: 12),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                          decoration: BoxDecoration(
+                            border: Border.all(color: Colors.grey.shade400),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: DropdownButtonHideUnderline(
+                            child: DropdownButton<int>(
+                              value: _selectedLevel,
+                              items: List.generate(20, (index) => index + 1).map((lvl) {
+                                return DropdownMenuItem<int>(
+                                  value: lvl,
+                                  child: Text('Lv.$lvl', style: const TextStyle(fontWeight: FontWeight.bold)),
+                                );
+                              }).toList(),
+                              onChanged: _onLevelChanged,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    TextField(
+                      controller: _titleController,
+                      decoration: InputDecoration(
+                        labelText: 'Lv.$_selectedLevel の称号名',
+                        hintText: '例: 凄腕クリエイター',
+                        border: const OutlineInputBorder(),
+                        prefixIcon: const Icon(Icons.military_tech, color: Colors.amber),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 24),
+            Card(
+              elevation: 2,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'ステップアップ目標編集',
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        const Text('対象要素: ', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: Colors.indigo.shade50,
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: Colors.indigo.shade200),
+                          ),
+                          child: DropdownButtonHideUnderline(
+                            child: DropdownButton<String>(
+                              value: categories.contains(_selectedGoalCategory) ? _selectedGoalCategory : (categories.isNotEmpty ? categories.first : null),
+                              items: categories.map((cat) {
+                                return DropdownMenuItem<String>(
+                                  value: cat,
+                                  child: Text(cat, style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.indigo)),
+                                );
+                              }).toList(),
+                              onChanged: (val) {
+                                if (val != null) {
+                                  _syncCurrentControllersToData();
+                                  setState(() {
+                                    _selectedGoalCategory = val;
+                                  });
+                                }
+                              },
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        const Text('対象レベル: ', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: Colors.indigo.shade50,
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: Colors.indigo.shade200),
+                          ),
+                          child: DropdownButtonHideUnderline(
+                            child: DropdownButton<int>(
+                              value: _selectedGoalLevel,
+                              items: List.generate(20, (i) => i + 1).map((lvl) {
+                                return DropdownMenuItem<int>(
+                                  value: lvl,
+                                  child: Text('Lv.$lvl', style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.indigo)),
+                                );
+                              }).toList(),
+                              onChanged: (val) {
+                                if (val != null) {
+                                  _syncCurrentControllersToData();
+                                  setState(() {
+                                    _selectedGoalLevel = val;
+                                  });
+                                }
+                              },
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    ElevatedButton.icon(
+                      onPressed: _addGoal,
+                      icon: const Icon(Icons.add, size: 18),
+                      label: const Text('目標追加（入力欄を追加）'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.green.shade700,
+                        foregroundColor: Colors.white,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    const Text(
+                      '選択した要素とレベルに対応するステップアップ目標の内容と獲得SPを編集します。',
+                      style: TextStyle(color: Colors.grey, fontSize: 13),
+                    ),
+                    const SizedBox(height: 16),
+                    Builder(
+                      builder: (context) {
+                        final currentKey = _getGoalKey(_selectedGoalCategory, _selectedGoalLevel);
+                        final currentGoals = _categoryGoals[currentKey] ?? [];
+                        final tControllers = _goalTitleControllers[currentKey] ?? [];
+                        final sControllers = _goalSpControllers[currentKey] ?? [];
+
+                        if (currentGoals.isEmpty) {
+                          return const Padding(
+                            padding: EdgeInsets.all(16.0),
+                            child: Center(child: Text('目標が登録されていません')),
+                          );
+                        }
+
+                        return Column(
+                          children: List.generate(currentGoals.length, (index) {
+                            if (index >= tControllers.length || index >= sControllers.length) {
+                              return const SizedBox();
+                            }
+                            return Card(
+                              margin: const EdgeInsets.only(bottom: 12),
+                              color: Colors.grey.shade50,
+                              shape: RoundedRectangleBorder(
+                                side: BorderSide(color: Colors.grey.shade300),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Padding(
+                                padding: const EdgeInsets.all(12.0),
+                                child: Column(
+                                  children: [
+                                    Row(
+                                      children: [
+                                        Text('目標 #${index + 1}', style: const TextStyle(fontWeight: FontWeight.bold)),
+                                        const Spacer(),
+                                        IconButton(
+                                          icon: const Icon(Icons.delete_outline, color: Colors.red),
+                                          onPressed: () => _removeGoal(index),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 8),
+                                    TextField(
+                                      controller: tControllers[index],
+                                      decoration: const InputDecoration(
+                                        labelText: 'ステップアップ目標内容',
+                                        border: OutlineInputBorder(),
+                                        isDense: true,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    TextField(
+                                      controller: sControllers[index],
+                                      keyboardType: TextInputType.number,
+                                      decoration: const InputDecoration(
+                                        labelText: '獲得SP',
+                                        suffixText: 'SP',
+                                        border: OutlineInputBorder(),
+                                        isDense: true,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            );
+                          }),
+                        );
+                      },
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ==========================================
 // バトンタッチページ
 // ==========================================
 // チェックリストの最終確認を行い、次の方へ引き継ぐための画面です。
@@ -3845,104 +4324,147 @@ class _AdminManagementScreenState extends State<AdminManagementScreen> {
             colors: [Color(0xFFFFFFFF), Color(0xFFFBEAEA)],
           ),
         ),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 80.0, vertical: 40.0),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 40.0, vertical: 40.0),
           child: Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Icon(
-                  Icons.admin_panel_settings,
-                  size: 80,
-                  color: Colors.red,
-                ),
-                const SizedBox(height: 16),
-                const Text(
-                  '管理する作業を選択してください',
-                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 40),
+            child: Container(
+              constraints: const BoxConstraints(maxWidth: 600),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(
+                    Icons.admin_panel_settings,
+                    size: 80,
+                    color: Colors.red,
+                  ),
+                  const SizedBox(height: 16),
+                  const Text(
+                    '管理する作業を選択してください',
+                    style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 40),
 
-                // 作業を切り替えるためのドロップダウンメニュー
-                if (_MainNavigationScreenState._tasksData.isNotEmpty)
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      border: Border.all(color: Colors.grey, width: 1.0),
-                      borderRadius: BorderRadius.circular(4.0),
-                    ),
-                    child: DropdownButton<String>(
-                      value: _MainNavigationScreenState._tasksData.containsKey(_selectedTask) ? _selectedTask : _MainNavigationScreenState._tasksData.keys.first,
-                      isExpanded: true,
-                      underline: const SizedBox(),
-                      style: const TextStyle(fontSize: 18, color: Colors.black),
-                      items: _MainNavigationScreenState._tasksData.keys.map((String task) {
-                        return DropdownMenuItem<String>(
-                          value: task,
-                          child: Text(task),
-                        );
-                      }).toList(),
-                      onChanged: (String? newValue) {
-                        if (newValue != null) {
-                          setState(() {
-                            _selectedTask = newValue;
-                          });
-                        }
-                      },
-                    ),
-                  )
-                else
-                  const Text('登録されている作業がありません'),
-                const SizedBox(height: 40),
+                  // 作業を切り替えるためのドロップダウンメニュー
+                  if (_MainNavigationScreenState._tasksData.isNotEmpty)
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        border: Border.all(color: Colors.grey, width: 1.0),
+                        borderRadius: BorderRadius.circular(4.0),
+                      ),
+                      child: DropdownButton<String>(
+                        value: _MainNavigationScreenState._tasksData.containsKey(_selectedTask) ? _selectedTask : _MainNavigationScreenState._tasksData.keys.first,
+                        isExpanded: true,
+                        underline: const SizedBox(),
+                        style: const TextStyle(fontSize: 18, color: Colors.black),
+                        items: _MainNavigationScreenState._tasksData.keys.map((String task) {
+                          return DropdownMenuItem<String>(
+                            value: task,
+                            child: Text(task),
+                          );
+                        }).toList(),
+                        onChanged: (String? newValue) {
+                          if (newValue != null) {
+                            setState(() {
+                              _selectedTask = newValue;
+                            });
+                          }
+                        },
+                      ),
+                    )
+                  else
+                    const Text('登録されている作業がありません'),
+                  const SizedBox(height: 40),
 
-                // 作業内容の「編集」や「追加」を行うためのボタン列
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    OutlinedButton(
-                      onPressed: _MainNavigationScreenState._tasksData.isNotEmpty
-                          ? () => _showEditOptionsDialog(context)
-                          : null,
-                      style: OutlinedButton.styleFrom(
-                        backgroundColor: Colors.white,
-                        foregroundColor: Colors.black,
-                        side: const BorderSide(color: Colors.grey, width: 1.0),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 24,
-                          vertical: 16,
+                  // 作業内容の「編集」や「追加」を行うためのボタン列
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      OutlinedButton(
+                        onPressed: _MainNavigationScreenState._tasksData.isNotEmpty
+                            ? () => _showEditOptionsDialog(context)
+                            : null,
+                        style: OutlinedButton.styleFrom(
+                          backgroundColor: Colors.white,
+                          foregroundColor: Colors.black,
+                          side: const BorderSide(color: Colors.grey, width: 1.0),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 24,
+                            vertical: 16,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(4.0),
+                          ),
                         ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(4.0),
-                        ),
+                        child: const Text('作業編集', style: TextStyle(fontSize: 16)),
                       ),
-                      child: const Text('作業編集', style: TextStyle(fontSize: 16)),
-                    ),
-                    const SizedBox(height: 16),
-                    OutlinedButton(
-                      onPressed: () {
-                        _showAddTaskDialog(context);
-                      },
-                      style: OutlinedButton.styleFrom(
-                        backgroundColor: Colors.white,
-                        foregroundColor: Colors.black,
-                        side: const BorderSide(color: Colors.grey, width: 1.0),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 24,
-                          vertical: 16,
+                      const SizedBox(height: 16),
+                      OutlinedButton(
+                        onPressed: () {
+                          _showAddTaskDialog(context);
+                        },
+                        style: OutlinedButton.styleFrom(
+                          backgroundColor: Colors.white,
+                          foregroundColor: Colors.black,
+                          side: const BorderSide(color: Colors.grey, width: 1.0),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 24,
+                            vertical: 16,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(4.0),
+                          ),
                         ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(4.0),
-                        ),
+                        child: const Text('作業追加', style: TextStyle(fontSize: 16)),
                       ),
-                      child: const Text('作業追加', style: TextStyle(fontSize: 16)),
-                    ),
-                  ],
-                ),
-              ],
+                      const SizedBox(height: 16),
+                      ElevatedButton(
+                        onPressed: () async {
+                          final initialSpData = getTaskSpData(_selectedTask);
+                          final result = await Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => EditSpScreen(
+                                selectedTask: _selectedTask,
+                                initialSpData: _MainNavigationScreenState._tasksData[_selectedTask]?['spData'] ?? initialSpData,
+                              ),
+                            ),
+                          );
+                          if (result != null) {
+                            setState(() {
+                              if (!_MainNavigationScreenState._tasksData.containsKey(_selectedTask)) {
+                                _MainNavigationScreenState._tasksData[_selectedTask] = {};
+                              }
+                              _MainNavigationScreenState._tasksData[_selectedTask]!['spData'] = result;
+                            });
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('SP情報を保存しました')),
+                              );
+                            }
+                          }
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.orange,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 24,
+                            vertical: 16,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(4.0),
+                          ),
+                        ),
+                        child: const Text('SP編集', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
           ),
         ),
@@ -4161,6 +4683,10 @@ class _AdminManagementScreenState extends State<AdminManagementScreen> {
 
 // 各タスクの SP データ、称号、レベル、バッジ、タイムラインの共通モックデータを取得するヘルパー
 Map<String, dynamic> getTaskSpData(String taskName) {
+  if (_MainNavigationScreenState._tasksData.containsKey(taskName) &&
+      _MainNavigationScreenState._tasksData[taskName]!.containsKey('spData')) {
+    return Map<String, dynamic>.from(_MainNavigationScreenState._tasksData[taskName]!['spData']);
+  }
   if (taskName == 'イラスト制作') {
     return {
       'skillsSp': {
@@ -4173,130 +4699,89 @@ Map<String, dynamic> getTaskSpData(String taskName) {
       },
       'titleName': '新進気鋭イラストレーター',
       'totalLevel': 16,
-      'badges': [
-        {'title': '構図マスター', 'desc': '黄金比を意識したキャラ配置を行った', 'unlocked': true, 'icon': Icons.architecture},
-        {'title': '美麗クリンナップ', 'desc': 'ブレのない綺麗な線画を作成した', 'unlocked': true, 'icon': Icons.brush},
-        {'title': 'カラーパレット達人', 'desc': '全体の配色バランスを完璧に決めた', 'unlocked': true, 'icon': Icons.palette},
-        {'title': '光と影の支配者', 'desc': '乗算とオーバーレイでドラマチックな光を表現', 'unlocked': false, 'icon': Icons.wb_sunny},
-        {'title': 'エクスポート達人', 'desc': '納品用のレイヤー整理を徹底した', 'unlocked': true, 'icon': Icons.folder_zip},
-        {'title': 'スピードドローイング', 'desc': '予定時間より早くラフ画を完了した', 'unlocked': false, 'icon': Icons.speed},
-      ],
       'timeline': [
-        {'time': '今日 16:30', 'task': 'オーバーレイ・スクリーンレイヤーでのエフェクト調整', 'sp': 35, 'type': '表現力'},
-        {'time': '今日 14:30', 'task': 'ベース配色と下塗りを完了', 'sp': 25, 'type': '丁寧さ'},
-        {'time': '昨日 11:30', 'task': 'ラフの中間確認をクライアントと完了', 'sp': 40, 'type': '構成力'},
-        {'time': '昨日 09:30', 'task': 'キャンバス設定とアタリの描画', 'sp': 20, 'type': '正確さ'},
+        {'time': '今日 16:30', 'task': 'オーバーレイ・スクリーンレイヤーでのエフェクト調整', 'sp': 35, 'type': '表現力 (Lv.16)'},
+        {'time': '今日 14:30', 'task': 'ベース配色と下塗りを完了', 'sp': 25, 'type': '画力 (Lv.16)'},
+        {'time': '昨日 11:30', 'task': 'ラフの中間確認をクライアントと完了', 'sp': 40, 'type': '構成力 (Lv.16)'},
       ],
     };
   } else if (taskName == '3Dモデリング') {
     return {
       'skillsSp': {
-        '画力': 430,
-        '創造性': 350,
-        '構成力': 460,
-        '表現力': 480,
+        '造形力': 430,
+        '質感表現': 480,
+        '空間認識': 460,
+        '骨組設計': 350,
         '集中力': 310,
-        '効率性': 400,
+        '作業効率': 400,
       },
       'titleName': '3Dジェネラリスト',
       'totalLevel': 15,
-      'badges': [
-        {'title': 'ローポリの極み', 'desc': '15,000ポリゴン以下でモデルを構築', 'unlocked': true, 'icon': Icons.view_in_ar},
-        {'title': 'UVアンラップ名人', 'desc': 'テクスチャの歪みなくUV展開を完了', 'unlocked': true, 'icon': Icons.texture},
-        {'title': '質感アーティスト', 'desc': 'Substance Painterでリアルな質感を表現', 'unlocked': false, 'icon': Icons.brush},
-        {'title': '完璧リギング', 'desc': 'ボーンとウェイトペイントを綺麗に設定', 'unlocked': true, 'icon': Icons.accessibility_new},
-        {'title': 'クリーンメッシュ', 'desc': '不要な多角形面(N-gon)をすべて排除', 'unlocked': true, 'icon': Icons.grid_3x3},
-        {'title': 'エンジンインポーター', 'desc': 'Unityでマテリアルが崩れずインポート成功', 'unlocked': false, 'icon': Icons.play_arrow},
-      ],
       'timeline': [
-        {'time': '今日 15:30', 'task': 'ボーン配置とウェイトペイント完了', 'sp': 45, 'type': '立体感'},
-        {'time': '今日 14:00', 'task': '手描き風テクスチャペイント', 'sp': 35, 'type': '丁寧さ'},
-        {'time': '昨日 12:00', 'task': 'トポロジー整理とUV展開を完了', 'sp': 30, 'type': '正確さ'},
+        {'time': '今日 15:30', 'task': 'ボーン配置とウェイトペイント完了', 'sp': 45, 'type': '骨組設計 (Lv.15)'},
+        {'time': '今日 14:00', 'task': '手描き風テクスチャペイント', 'sp': 35, 'type': '質感表現 (Lv.15)'},
+        {'time': '昨日 12:00', 'task': 'トポロジー整理とUV展開を完了', 'sp': 30, 'type': '造形力 (Lv.15)'},
       ],
     };
   } else if (taskName == 'DTM') {
     return {
       'skillsSp': {
-        '画力': 390,
-        '創造性': 360,
-        '構成力': 420,
-        '表現力': 470,
+        'メロディ感覚': 470,
+        '音響デザイン': 420,
+        'リズム感': 390,
+        '音響調整': 360,
         '集中力': 330,
-        '効率性': 480,
+        '作業効率': 480,
       },
       'titleName': '次世代サウンドクリエイター',
       'totalLevel': 17,
-      'badges': [
-        {'title': 'グルーヴマスター', 'desc': 'ドラムとベースの絡み（ノリ）を調整', 'unlocked': true, 'icon': Icons.music_note},
-        {'title': '音響デザイナー', 'desc': 'Serumで特徴的なリードシンセを作成', 'unlocked': true, 'icon': Icons.graphic_eq},
-        {'title': 'コード進行マスター', 'desc': 'エモーショナルなコード進行を入力', 'unlocked': true, 'icon': Icons.piano},
-        {'title': 'ミキシングエンジニア', 'desc': '不要な低域をEQでカットし濁りを解消', 'unlocked': true, 'icon': Icons.equalizer},
-        {'title': 'ダイナミクスマスター', 'desc': 'コンプレッサーを適切に掛け音圧を確保', 'unlocked': false, 'icon': Icons.volume_up},
-        {'title': 'Future Bass開拓者', 'desc': 'ドロップでの盛り上がりを演出しきった', 'unlocked': false, 'icon': Icons.auto_awesome},
-      ],
       'timeline': [
-        {'time': '今日 15:30', 'task': 'ミキシング・イコライジング処理', 'sp': 35, 'type': '丁寧さ'},
-        {'time': '今日 13:00', 'task': 'ドロップのシンセコード・リードの構築', 'sp': 40, 'type': '表現力'},
-        {'time': '昨日 10:00', 'task': 'ドラム・リズム隊の打ち込み', 'sp': 25, 'type': 'スピード'},
+        {'time': '今日 15:30', 'task': 'ミキシング・イコライジング処理', 'sp': 35, 'type': '音響調整 (Lv.17)'},
+        {'time': '今日 13:00', 'task': 'ドロップのシンセコード・リードの構築', 'sp': 40, 'type': 'メロディ感覚 (Lv.17)'},
+        {'time': '昨日 10:00', 'task': 'ドラム・リズム隊の打ち込み', 'sp': 25, 'type': 'リズム感 (Lv.17)'},
       ],
     };
   } else if (taskName == '動画編集') {
     return {
       'skillsSp': {
-        '画力': 410,
-        '創造性': 460,
-        '構成力': 380,
-        '表現力': 430,
+        'カット技術': 460,
+        'テロップデザイン': 430,
+        '演出力': 410,
+        '音量バランス': 380,
         '集中力': 320,
-        '効率性': 450,
+        '納品効率': 450,
       },
       'titleName': '凄腕ビデオディレクター',
       'totalLevel': 18,
-      'badges': [
-        {'title': 'ジェットカット職人', 'desc': '不要な無音箇所を綺麗にカットした', 'unlocked': true, 'icon': Icons.content_cut},
-        {'title': 'テロップデザイナー', 'desc': '見やすくフォントや境界線を設定した', 'unlocked': true, 'icon': Icons.subtitles},
-        {'title': '音量バランサー', 'desc': '声とBGMの音量を適正（-6dB / -24dB）に調整', 'unlocked': true, 'icon': Icons.volume_up},
-        {'title': 'カラーグレーダー', 'desc': 'インタビュー映像を明るく清潔感ある色に補正', 'unlocked': true, 'icon': Icons.color_lens},
-        {'title': 'トランジションマスター', 'desc': '飽きさせない画面切り替えエフェクトを追加', 'unlocked': false, 'icon': Icons.animation},
-        {'title': 'スピード納品', 'desc': '目標時間の1時間前に初稿をエクスポート', 'unlocked': false, 'icon': Icons.bolt},
-      ],
       'timeline': [
-        {'time': '今日 16:00', 'task': 'カラーグレーディング・色調補正', 'sp': 30, 'type': '表現力'},
-        {'time': '今日 12:00', 'task': 'YouTubeインタビュー動画のテロップ挿入', 'sp': 45, 'type': '丁寧さ'},
-        {'time': '昨日 09:30', 'task': '動画素材の取り込みと荒編集完了', 'sp': 35, 'type': 'スピード'},
+        {'time': '今日 16:00', 'task': 'カラーグレーディング・色調補正', 'sp': 30, 'type': '演出力 (Lv.18)'},
+        {'time': '今日 12:00', 'task': 'YouTubeインタビュー動画のテロップ挿入', 'sp': 45, 'type': 'テロップデザイン (Lv.18)'},
+        {'time': '昨日 09:30', 'task': '動画素材の取り込みとジェットカット完了', 'sp': 35, 'type': 'カット技術 (Lv.18)'},
       ],
     };
   } else {
     return {
       'skillsSp': {
-        '画力': 490,
-        '創造性': 450,
-        '構成力': 430,
-        '表現力': 380,
-        '集中力': 290,
-        '効率性': 470,
+        '入力速度': 490,
+        '正確性': 470,
+        'データ整理': 450,
+        'ツール活用': 430,
+        '集中力': 380,
+        '情報セキュリティ': 290,
       },
       'titleName': taskName == 'データ入力' ? 'データプロフェッショナル' : '${taskName}マスター',
       'totalLevel': 19,
-      'badges': [
-        {'title': 'パーフェクトインプット', 'desc': '誤字脱字・ミス0件でデータ入力を完了', 'unlocked': true, 'icon': Icons.done_all},
-        {'title': '高速タイピスト', 'desc': '予定時間より30分早く入力を終えた', 'unlocked': true, 'icon': Icons.keyboard},
-        {'title': '重複チェッカー', 'desc': '条件付き書式や関数で重複を完全に排除', 'unlocked': true, 'icon': Icons.cleaning_services},
-        {'title': 'フォーマットマスター', 'desc': '日付や全角半角のルールを順守した', 'unlocked': true, 'icon': Icons.grid_on},
-        {'title': '安全管理員', 'desc': '個人情報ファイルを安全に扱い消去を完了', 'unlocked': false, 'icon': Icons.security},
-        {'title': 'マクロ活用家', 'desc': '簡単な自動補正マクロで作業を効率化', 'unlocked': false, 'icon': Icons.psychology},
-      ],
       'timeline': [
-        {'time': '今日 14:30', 'task': '全件の照合・重複排除・フォーマットチェック', 'sp': 40, 'type': '正確さ'},
-        {'time': '今日 09:30', 'task': '顧客データ入力（200件分）', 'sp': 50, 'type': 'タイピング'},
-        {'time': '昨日 15:00', 'task': 'スプレッドシートへの入力フォーマット整備', 'sp': 25, 'type': '丁寧さ'},
+        {'time': '今日 14:30', 'task': '全件の照合・重複排除・フォーマットチェック', 'sp': 40, 'type': '正確性 (Lv.19)'},
+        {'time': '今日 09:30', 'task': '顧客データ入力（200件分）', 'sp': 50, 'type': '入力速度 (Lv.19)'},
+        {'time': '昨日 15:00', 'task': 'スプレッドシートへの入力フォーマット整備', 'sp': 25, 'type': 'データ整理 (Lv.19)'},
       ],
     };
   }
 }
 
 // ==========================================
-// 利用者用：SP・できたこと実績画面
+// 利用者用：できたこと実績画面
 // ==========================================
 class SpAchievementsScreen extends StatefulWidget {
   final String selectedTask;
@@ -4313,10 +4798,13 @@ class _SpAchievementsScreenState extends State<SpAchievementsScreen> with Single
 
   // 6つの要素のデータ（モックデータだが、選択タスクに応じて動的に変える）
   late Map<String, int> _skillsSp;
-  late List<Map<String, dynamic>> _badges;
   late List<Map<String, dynamic>> _timeline;
   late String _titleName;
   late int _totalLevel;
+
+  late String _selectedDekikotoCategory;
+  int _selectedDekikotoLevel = 1;
+  final Map<String, List<Map<String, dynamic>>> _categoryGoals = {};
 
   @override
   void initState() {
@@ -4345,8 +4833,57 @@ class _SpAchievementsScreenState extends State<SpAchievementsScreen> with Single
     _skillsSp = Map<String, int>.from(data['skillsSp']);
     _titleName = data['titleName'] as String;
     _totalLevel = data['totalLevel'] as int;
-    _badges = List<Map<String, dynamic>>.from(data['badges']);
     _timeline = List<Map<String, dynamic>>.from(data['timeline']);
+
+    _selectedDekikotoCategory = _skillsSp.keys.isNotEmpty ? _skillsSp.keys.first : '画力';
+    _selectedDekikotoLevel = _totalLevel.clamp(1, 20);
+    _initCategoryGoals(data);
+  }
+
+  void _initCategoryGoals(Map<String, dynamic> data) {
+    _categoryGoals.clear();
+
+    if (data.containsKey('categoryGoals')) {
+      final savedGoals = data['categoryGoals'] as Map;
+      savedGoals.forEach((key, list) {
+        if (list is List) {
+          _categoryGoals[key.toString()] = list.map((g) {
+            final mapG = Map<String, dynamic>.from(g as Map);
+            if (!mapG.containsKey('done')) mapG['done'] = false;
+            return mapG;
+          }).toList();
+        }
+      });
+    }
+
+    final categories = _skillsSp.keys.toList();
+    for (var cat in categories) {
+      for (int lvl = 1; lvl <= 20; lvl++) {
+        final key = "${cat}_Lv$lvl";
+        if (!_categoryGoals.containsKey(key)) {
+          _categoryGoals[key] = _generateDefaultGoals(cat, lvl);
+        }
+      }
+    }
+  }
+
+  List<Map<String, dynamic>> _generateDefaultGoals(String cat, int lvl) {
+    if (lvl <= 5) {
+      return [
+        {'title': '$cat の基本操作と準備を丁寧に行った（初級）', 'done': false, 'sp': 15},
+        {'title': '$cat の入門手順を順番通りに実践した（初級）', 'done': false, 'sp': 20},
+      ];
+    } else if (lvl <= 10) {
+      return [
+        {'title': '$cat の基礎技術を意識して作業を行った（中級）', 'done': false, 'sp': 25},
+        {'title': '$cat の品質向上のための工夫を取り入れた（中級）', 'done': false, 'sp': 30},
+      ];
+    } else {
+      return [
+        {'title': '$cat の高度な応用技術を完璧にマスターした（上級）', 'done': false, 'sp': 35},
+        {'title': '$cat のプロレベルの仕上がりと効率化を達成した（上級）', 'done': false, 'sp': 40},
+      ];
+    }
   }
 
   // 6つの要素に応じた異なる色を返す
@@ -4374,7 +4911,7 @@ class _SpAchievementsScreenState extends State<SpAchievementsScreen> with Single
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('SP・できたこと実績'),
+        title: const Text('できたこと実績'),
         centerTitle: true,
       ),
       body: Container(
@@ -4390,40 +4927,53 @@ class _SpAchievementsScreenState extends State<SpAchievementsScreen> with Single
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // 総合ステータス
+              // 1. 称号タイル
               _buildHeaderCard(totalSp),
               const SizedBox(height: 24),
 
-              // レーダーチャート & プログレスバー
-              LayoutBuilder(
-                builder: (context, constraints) {
-                  if (constraints.maxWidth > 800) {
-                    return Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Expanded(flex: 4, child: _buildRadarChartSection(skillNames, skillValues)),
-                        const SizedBox(width: 24),
-                        Expanded(flex: 5, child: _buildProgressBarsSection(skillNames, skillValues)),
-                      ],
-                    );
-                  } else {
-                    return Column(
-                      children: [
-                        _buildRadarChartSection(skillNames, skillValues),
-                        const SizedBox(height: 24),
-                        _buildProgressBarsSection(skillNames, skillValues),
-                      ],
-                    );
-                  }
-                },
+              // 適性診断アプリ送信ボタン
+              Card(
+                elevation: 3,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                child: Padding(
+                  padding: const EdgeInsets.all(20.0),
+                  child: Center(
+                    child: ElevatedButton.icon(
+                      onPressed: () {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('適性診断アプリへデータを送信しました'),
+                            backgroundColor: Colors.teal,
+                            duration: Duration(seconds: 2),
+                          ),
+                        );
+                      },
+                      icon: const Icon(Icons.send_rounded, size: 24),
+                      label: const Text(
+                        '適性診断アプリに\nデータを送る',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, height: 1.3),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.teal.shade700,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        elevation: 2,
+                      ),
+                    ),
+                  ),
+                ),
               ),
               const SizedBox(height: 24),
 
-              // アチーブメントバッジ
-              _buildBadgesSection(),
+              // 2. できたこと（ステップアップ目標）
+              _buildDekikotoSection(skillNames),
               const SizedBox(height: 24),
 
-              // できたことタイムライン
+              // 3. できたことタイムライン
               _buildTimelineSection(),
             ],
           ),
@@ -4521,13 +5071,13 @@ class _SpAchievementsScreenState extends State<SpAchievementsScreen> with Single
                             borderRadius: BorderRadius.circular(10),
                           ),
                         ),
-                        // 中のバー（水色）
+                        // 中のバー（明るいオレンジ）
                         FractionallySizedBox(
                           widthFactor: progress.clamp(0.0, 1.0),
                           child: Container(
                             height: 30,
                             decoration: BoxDecoration(
-                              color: const Color(0xFF00FFFF),
+                              color: const Color(0xFFFF9800),
                               borderRadius: BorderRadius.circular(10),
                             ),
                           ),
@@ -4659,7 +5209,10 @@ class _SpAchievementsScreenState extends State<SpAchievementsScreen> with Single
     );
   }
 
-  Widget _buildBadgesSection() {
+  Widget _buildDekikotoSection(List<String> skillNames) {
+    final currentKey = "${_selectedDekikotoCategory}_Lv$_selectedDekikotoLevel";
+    final currentGoals = _categoryGoals[currentKey] ?? [];
+
     return Card(
       elevation: 3,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -4668,66 +5221,130 @@ class _SpAchievementsScreenState extends State<SpAchievementsScreen> with Single
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'できたこと（ステップアップ目標）',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    const Text('対象要素: ', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: Colors.indigo.shade50,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: Colors.indigo.shade200),
+                      ),
+                      child: DropdownButtonHideUnderline(
+                        child: DropdownButton<String>(
+                          value: skillNames.contains(_selectedDekikotoCategory)
+                              ? _selectedDekikotoCategory
+                              : (skillNames.isNotEmpty ? skillNames.first : null),
+                          items: skillNames.map((name) {
+                            return DropdownMenuItem<String>(
+                              value: name,
+                              child: Text(
+                                name,
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.indigo,
+                                ),
+                              ),
+                            );
+                          }).toList(),
+                          onChanged: (val) {
+                            if (val != null) {
+                              setState(() {
+                                _selectedDekikotoCategory = val;
+                              });
+                            }
+                          },
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
             const Text(
-              'アチーブメントバッジ（できたこと獲得）',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              '要素を選択し、達成したステップアップ目標にチェックを入れるとタイムラインに即時反映されます。',
+              style: TextStyle(color: Colors.grey, fontSize: 13),
             ),
             const SizedBox(height: 16),
-            GridView.builder(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-                maxCrossAxisExtent: 180,
-                crossAxisSpacing: 12,
-                mainAxisSpacing: 12,
-                mainAxisExtent: 130,
+            if (currentGoals.isEmpty)
+              const Padding(
+                padding: EdgeInsets.all(16),
+                child: Text('目標が登録されていません'),
               ),
-              itemCount: _badges.length,
-              itemBuilder: (context, index) {
-                final badge = _badges[index];
-                final unlocked = badge['unlocked'] as bool;
-                return Container(
-                  decoration: BoxDecoration(
-                    color: unlocked ? Colors.amber.shade50 : Colors.grey.shade100,
-                    border: Border.all(
-                      color: unlocked ? Colors.amber.shade300 : Colors.grey.shade300,
-                      width: unlocked ? 1.5 : 1.0,
+            ...List.generate(currentGoals.length, (index) {
+              final goal = currentGoals[index];
+              final isDone = goal['done'] as bool? ?? false;
+              final title = goal['title'] as String? ?? '';
+              final sp = goal['sp'] as int? ?? 20;
+
+              return Card(
+                margin: const EdgeInsets.only(bottom: 8),
+                color: isDone ? Colors.green.shade50 : Colors.white,
+                shape: RoundedRectangleBorder(
+                  side: BorderSide(
+                    color: isDone ? Colors.green.shade300 : Colors.grey.shade300,
+                  ),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: CheckboxListTile(
+                  value: isDone,
+                  activeColor: Colors.green,
+                  title: Text(
+                    title,
+                    style: TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 14,
+                      decoration: isDone ? TextDecoration.lineThrough : null,
+                      color: isDone ? Colors.green.shade900 : Colors.black87,
                     ),
-                    borderRadius: BorderRadius.circular(12),
                   ),
-                  padding: const EdgeInsets.all(8),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        badge['icon'] as IconData,
-                        color: unlocked ? Colors.amber.shade800 : Colors.grey.shade400,
-                        size: 32,
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        badge['title'] as String,
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
-                          color: unlocked ? Colors.black87 : Colors.grey.shade600,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        badge['desc'] as String,
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: 9,
-                          color: unlocked ? Colors.amber.shade900 : Colors.grey.shade500,
-                        ),
-                      ),
-                    ],
+                  subtitle: Text(
+                    '+$sp SP (${_selectedDekikotoCategory})',
+                    style: TextStyle(
+                      color: isDone ? Colors.green.shade700 : Colors.grey,
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
-                );
-              },
-            ),
+                  onChanged: (bool? checked) {
+                    if (checked == null) return;
+                    setState(() {
+                      goal['done'] = checked;
+                      if (checked) {
+                        final now = DateTime.now();
+                        final timeStr = '今日 ${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}';
+                        _timeline.insert(0, {
+                          'time': timeStr,
+                          'task': title,
+                          'sp': sp,
+                          'type': _selectedDekikotoCategory,
+                        });
+                        _skillsSp[_selectedDekikotoCategory] = (_skillsSp[_selectedDekikotoCategory] ?? 0) + sp;
+                      }
+                    });
+                    if (checked && context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('タイムラインに「$title」を追加しました！（+$sp SP）'),
+                          backgroundColor: Colors.green.shade700,
+                          duration: const Duration(seconds: 2),
+                        ),
+                      );
+                    }
+                  },
+                ),
+              );
+            }),
           ],
         ),
       ),
