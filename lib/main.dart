@@ -27,8 +27,29 @@ class JobExplanationApp extends StatelessWidget {
     return MaterialApp(
       title: '作業手順', // アプリのタイトル
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue), // テーマカラーの設定
-        useMaterial3: true, // 最新のデザインシステム（Material 3）を使用
+        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF00695C)),
+        useMaterial3: true,
+        appBarTheme: const AppBarTheme(
+          backgroundColor: Colors.white,
+          surfaceTintColor: Colors.white,
+          foregroundColor: Color(0xFF1A1A1A),
+          elevation: 0,
+          toolbarHeight: 56.0,
+          centerTitle: true,
+          titleTextStyle: TextStyle(
+            color: Color(0xFF1A1A1A),
+            fontSize: 20.0,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        elevatedButtonTheme: ElevatedButtonThemeData(
+          style: ElevatedButton.styleFrom(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16.0),
+            ),
+            elevation: 2,
+          ),
+        ),
       ),
       home: const LoginScreen(
         appName: '作業手順',
@@ -39,12 +60,85 @@ class JobExplanationApp extends StatelessWidget {
 }
 
 // ==========================================
+// 画面共通ヘッダー（設定・使い方）
+// ==========================================
+Widget buildWorkGuideUserHeader(BuildContext context) {
+  return Padding(
+    padding: const EdgeInsets.only(top: 12.0, left: 16.0, right: 16.0, bottom: 12.0),
+    child: Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        OutlinedButton.icon(
+          onPressed: () {},
+          style: OutlinedButton.styleFrom(
+            backgroundColor: Colors.white,
+            foregroundColor: const Color(0xFF04044C),
+            side: BorderSide(color: const Color(0xFF04044C).withValues(alpha: 0.5)),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16.0)),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+          ),
+          icon: const Icon(Icons.settings, size: 18),
+          label: const Text('設定'),
+        ),
+        PopupMenuButton<String>(
+          color: Colors.white,
+          surfaceTintColor: Colors.white,
+          onSelected: (String value) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                backgroundColor: const Color(0xFF04044C),
+                content: Text('$value が選択されました', style: const TextStyle(color: Colors.white)),
+                duration: const Duration(seconds: 2),
+              ),
+            );
+          },
+          itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
+            const PopupMenuItem<String>(
+              value: '使い方１',
+              child: Text('使い方１', style: TextStyle(color: Color(0xFF04044C))),
+            ),
+            const PopupMenuItem<String>(
+              value: '使い方２',
+              child: Text('使い方２', style: TextStyle(color: Color(0xFF04044C))),
+            ),
+            const PopupMenuItem<String>(
+              value: '使い方３',
+              child: Text('使い方３', style: TextStyle(color: Color(0xFF04044C))),
+            ),
+          ],
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16.0),
+              border: Border.all(color: const Color(0xFF04044C).withValues(alpha: 0.5)),
+            ),
+            child: const Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.help_outline, size: 18, color: Color(0xFF04044C)),
+                SizedBox(width: 6),
+                Text('使い方', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF04044C))),
+                SizedBox(width: 4),
+                Icon(Icons.arrow_drop_down, size: 18, color: Color(0xFF04044C)),
+              ],
+            ),
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
+// ==========================================
 // メインナビゲーション画面
 // ==========================================
 // 複数の画面（チェックリスト、概要など）を切り替えるための画面です。
 // StatefulWidgetは、状態を持つ（変化する）ウィジェットです。
 class MainNavigationScreen extends StatefulWidget {
   const MainNavigationScreen({super.key});
+
+  static Map<String, Map<String, dynamic>> get tasksData => _MainNavigationScreenState._tasksData;
 
   @override
   State<MainNavigationScreen> createState() => _MainNavigationScreenState();
@@ -623,7 +717,22 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   @override
   Widget build(BuildContext context) {
     // Scaffoldは、アプリの基本的なレイアウト（ヘッダーやボディなど）を構成するためのウィジェットです。
-    return Scaffold(
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (!didPop) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const LoginScreen(
+                appName: '作業手順',
+                originalHome: MainNavigationScreen(),
+              ),
+            ),
+          );
+        }
+      },
+      child: Scaffold(
       // Stackはウィジェットを奥から手前へ順番に重ねて表示します。
       body: Stack(
         children: [
@@ -730,8 +839,9 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
             ),
         ],
       ),
-    );
-  }
+    ),
+  );
+}
 }
 
 // ==========================================
@@ -858,22 +968,20 @@ class _TaskSelectionScreenState extends State<TaskSelectionScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('作業手順'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.logout),
-            onPressed: () {
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const LoginScreen(
-                    appName: '作業手順',
-                  ),
-                ),
-              );
-            },
+        automaticallyImplyLeading: false,
+        title: const Text(
+          '作業手順',
+          style: TextStyle(
+            color: Color(0xFF1A1A1A),
+            fontSize: 20.0,
+            fontWeight: FontWeight.bold,
           ),
-        ],
+        ),
+        toolbarHeight: 56.0,
+        backgroundColor: Colors.white,
+        surfaceTintColor: Colors.white,
+        elevation: 0,
+        centerTitle: true,
       ),
       body: Container(
         width: double.infinity,
@@ -887,227 +995,240 @@ class _TaskSelectionScreenState extends State<TaskSelectionScreen> {
           ),
         ),
         child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 80.0, vertical: 40.0),
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.only(bottom: 40.0),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const Center(
-                child: Text(
-                  '作業選択はこちら',
-                  style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
-                ),
-              ),
-              const SizedBox(height: 24),
-
-              // 作業を切り替えるためのドロップダウンメニュー
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 4,
-                ),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  border: Border.all(color: Colors.grey, width: 1.0),
-                  borderRadius: BorderRadius.circular(4.0),
-                ),
-                child: DropdownButton<String>(
-                  value: widget.selectedTask,
-                  isExpanded: true,
-                  underline: const SizedBox(),
-                  style: const TextStyle(fontSize: 18, color: Colors.black),
-                  // 登録されている作業名をリストにしてメニュー項目を作ります。
-                  items:
-                      widget.tasks.map((String task) {
-                        return DropdownMenuItem<String>(
-                          value: task,
-                          child: Text(task),
-                        );
-                      }).toList(),
-                  onChanged: (String? newValue) {
-                    if (newValue != null) {
-                      widget.onTaskChanged(newValue); // 選んだ作業名を親に伝える
-                    }
-                  },
-                ),
-              ),
-              const SizedBox(height: 24),
-
-              // 「開始する」ボタン
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: widget.onStart,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blue,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 24,
-                      vertical: 16,
-                    ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(4.0),
-                    ),
-                  ),
-                  child: const Text(
-                    '開始する',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 40), // プログレスバーとの間隔
-
-              // 現在の自分のレベルとSP（スキルポイント）の総プログレスバー
-              Builder(
-                builder: (context) {
-                  final spData = getTaskSpData(widget.selectedTask);
-                  final skillsSp = Map<String, int>.from(spData['skillsSp']);
-                  final int totalSp = skillsSp.values.reduce((a, b) => a + b);
-                  final int currentLevel = spData['totalLevel'] as int;
-                  const int nextLevelSp = 500;
-                  final int currentLevelSp = totalSp % nextLevelSp;
-                  final double progress = currentLevelSp / nextLevelSp;
-                  final int neededSp = nextLevelSp - currentLevelSp;
-
-                  return Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.9),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.indigo.shade100),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.05),
-                          blurRadius: 10,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Column(
+              buildWorkGuideUserHeader(context),
+              const SizedBox(height: 8),
+                    Center(
+                      child: FractionallySizedBox(
+                        widthFactor: 0.90,
+                        child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
-                              '現在のレベル: Lv. $currentLevel',
-                              style: const TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.indigo,
+                            const Center(
+                              child: Text(
+                                '作業選択はこちら',
+                                style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
                               ),
                             ),
-                            const SizedBox(height: 4),
-                            Text(
-                              '総獲得SP: $totalSp',
-                              style: const TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.indigo,
+                  const SizedBox(height: 24),
+
+                  // 作業を切り替えるためのドロップダウンメニュー
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      border: Border.all(color: Colors.grey, width: 1.0),
+                      borderRadius: BorderRadius.circular(4.0),
+                    ),
+                    child: DropdownButton<String>(
+                      value: widget.selectedTask,
+                      isExpanded: true,
+                      underline: const SizedBox(),
+                      style: const TextStyle(fontSize: 18, color: Colors.black),
+                      // 登録されている作業名をリストにしてメニュー項目を作ります。
+                      items:
+                          widget.tasks.map((String task) {
+                            return DropdownMenuItem<String>(
+                              value: task,
+                              child: Text(task),
+                            );
+                          }).toList(),
+                      onChanged: (String? newValue) {
+                        if (newValue != null) {
+                          widget.onTaskChanged(newValue); // 選んだ作業名を親に伝える
+                        }
+                      },
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+
+                  // 「開始する」ボタン
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: widget.onStart,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.blue,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 24,
+                          vertical: 16,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(4.0),
+                        ),
+                      ),
+                      child: const Text(
+                        '開始する',
+                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 40), // プログレスバーとの間隔
+
+                  // 現在の自分のレベルとSP（スキルポイント）の総プログレスバー
+                  Builder(
+                    builder: (context) {
+                      final spData = getTaskSpData(widget.selectedTask);
+                      final skillsSp = Map<String, int>.from(spData['skillsSp']);
+                      final int totalSp = skillsSp.values.reduce((a, b) => a + b);
+                      final int currentLevel = spData['totalLevel'] as int;
+                      const int nextLevelSp = 500;
+                      final int currentLevelSp = totalSp % nextLevelSp;
+                      final double progress = currentLevelSp / nextLevelSp;
+                      final int neededSp = nextLevelSp - currentLevelSp;
+
+                      return Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.9),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.indigo.shade100),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.05),
+                              blurRadius: 10,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  '現在のレベル: Lv. $currentLevel',
+                                  style: const TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.indigo,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  '総獲得SP: $totalSp',
+                                  style: const TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.indigo,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 12),
+                            Container(
+                              height: 36,
+                              width: double.infinity,
+                              padding: const EdgeInsets.all(3),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFFFFFFF),
+                                borderRadius: BorderRadius.circular(13),
+                              ),
+                              child: Stack(
+                                children: [
+                                  // 未達成エリア（灰色背景）
+                                  Container(
+                                    height: 30,
+                                    decoration: BoxDecoration(
+                                      color: Colors.grey[300],
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
+                                  ),
+                                  // 中のバー（明るいオレンジ）
+                                  FractionallySizedBox(
+                                    widthFactor: progress.clamp(0.0, 1.0),
+                                    child: Container(
+                                      height: 30,
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFFFF9800),
+                                        borderRadius: BorderRadius.circular(10),
+                                      ),
+                                    ),
+                                  ),
+                                  // 中央のパーセンテージテキスト
+                                  Center(
+                                    child: Text(
+                                      '${(progress * 100).toInt()}%',
+                                      style: const TextStyle(
+                                        fontSize: 14,
+                                        color: Colors.black,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Align(
+                              alignment: Alignment.centerRight,
+                              child: Text(
+                                '次のレベル（Lv. ${currentLevel + 1}）まであと $neededSp SP ($currentLevelSp / $nextLevelSp)',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.grey.shade700,
+                                  fontWeight: FontWeight.w500,
+                                ),
                               ),
                             ),
                           ],
                         ),
-                        const SizedBox(height: 12),
-                        Container(
-                          height: 36,
-                          width: double.infinity,
-                          padding: const EdgeInsets.all(3),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFFFFFFF),
-                            borderRadius: BorderRadius.circular(13),
-                          ),
-                          child: Stack(
-                            children: [
-                              // 未達成エリア（灰色背景）
-                              Container(
-                                height: 30,
-                                decoration: BoxDecoration(
-                                  color: Colors.grey[300],
-                                  borderRadius: BorderRadius.circular(10),
-                                ),
-                              ),
-                              // 中のバー（明るいオレンジ）
-                              FractionallySizedBox(
-                                widthFactor: progress.clamp(0.0, 1.0),
-                                child: Container(
-                                  height: 30,
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xFFFF9800),
-                                    borderRadius: BorderRadius.circular(10),
-                                  ),
-                                ),
-                              ),
-                              // 中央のパーセンテージテキスト
-                              Center(
-                                child: Text(
-                                  '${(progress * 100).toInt()}%',
-                                  style: const TextStyle(
-                                    fontSize: 14,
-                                    color: Colors.black,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Align(
-                          alignment: Alignment.centerRight,
-                          child: Text(
-                            '次のレベル（Lv. ${currentLevel + 1}）まであと $neededSp SP ($currentLevelSp / $nextLevelSp)',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Colors.grey.shade700,
-                              fontWeight: FontWeight.w500,
+                      );
+                    }
+                  ),
+                  const SizedBox(height: 24),
+
+                  // 「できたこと実績」ボタン
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => SpAchievementsScreen(
+                              selectedTask: widget.selectedTask,
                             ),
                           ),
+                        );
+                      },
+                      style: OutlinedButton.styleFrom(
+                        backgroundColor: Colors.white,
+                        foregroundColor: Colors.indigo,
+                        side: const BorderSide(color: Colors.indigo, width: 1.5),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 24,
+                          vertical: 16,
                         ),
-                      ],
-                    ),
-                  );
-                }
-              ),
-              const SizedBox(height: 24),
-
-              // 「できたこと実績」ボタン
-              SizedBox(
-                width: double.infinity,
-                child: OutlinedButton.icon(
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => SpAchievementsScreen(
-                          selectedTask: widget.selectedTask,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(4.0),
                         ),
                       ),
-                    );
-                  },
-                  style: OutlinedButton.styleFrom(
-                    backgroundColor: Colors.white,
-                    foregroundColor: Colors.indigo,
-                    side: const BorderSide(color: Colors.indigo, width: 1.5),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 24,
-                      vertical: 16,
-                    ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(4.0),
+                      icon: const Icon(Icons.emoji_events, color: Colors.amber),
+                      label: const Text(
+                        'できたこと実績',
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                      ),
                     ),
                   ),
-                  icon: const Icon(Icons.emoji_events, color: Colors.amber),
-                  label: const Text(
-                    'できたこと実績',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                  ),
-                ),
+                ],
               ),
-            ],
+            ),
           ),
-        ),
+        ],
       ),
-    );
+    ),
+  ),
+);
   }
 }
 
@@ -1149,21 +1270,22 @@ class _ChecklistScreenState extends State<ChecklistScreen> {
     return Scaffold(
       appBar: AppBar(
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black),
+          icon: const Icon(Icons.arrow_back, color: Color(0xFF1A1A1A)),
           onPressed: widget.onBack,
         ),
         title: const Text(
           '作業チェックリスト',
           style: TextStyle(
-            color: Colors.black,
-            fontSize: 18,
+            color: Color(0xFF1A1A1A),
+            fontSize: 20.0,
             fontWeight: FontWeight.bold,
           ),
         ),
         centerTitle: true,
         backgroundColor: Colors.white,
+        surfaceTintColor: Colors.white,
         elevation: 0,
-        toolbarHeight: 60,
+        toolbarHeight: 56.0,
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(60),
           child: Padding(
@@ -1250,80 +1372,87 @@ class _ChecklistScreenState extends State<ChecklistScreen> {
           ),
         ),
         child: ListView.builder(
-          padding: const EdgeInsets.symmetric(horizontal: 50.0, vertical: 16.0),
-          itemCount: widget.data.length, // リストの数だけ繰り返す
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.only(bottom: 16.0),
+          itemCount: widget.data.length + 1, // リストの数 + ヘッダー
           itemBuilder: (context, index) {
-            final item = widget.data[index];
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // チェックリスト項目のタイル
-                Container(
-                  margin: const EdgeInsets.only(bottom: 4.0),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    border: Border.all(color: Colors.grey, width: 1.0),
-                    borderRadius: BorderRadius.circular(4.0),
+            if (index == 0) {
+              return buildWorkGuideUserHeader(context);
+            }
+            final item = widget.data[index - 1];
+            return Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 50.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // チェックリスト項目のタイル
+                  Container(
+                    margin: const EdgeInsets.only(bottom: 4.0),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      border: Border.all(color: Colors.grey, width: 1.0),
+                      borderRadius: BorderRadius.circular(4.0),
+                    ),
+                    child: CheckboxListTile(
+                      title: Text(item['title']),
+                      value: item['isChecked'],
+                      onChanged: (bool? value) {
+                        setState(() {
+                          item['isChecked'] = value!;
+                          widget.onSave(widget.data);
+                        });
+                      },
+                    ),
                   ),
-                  child: CheckboxListTile(
-                    title: Text(item['title']),
-                    value: item['isChecked'],
-                    onChanged: (bool? value) {
-                      setState(() {
-                        item['isChecked'] = value!;
-                        widget.onSave(widget.data);
-                      });
-                    },
-                  ),
-                ),
-                // 「画像を表示」ボタン専用のタイル（右寄せ・最小サイズ）
-                if (item['imagePath'] != null)
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: Container(
-                      margin: const EdgeInsets.only(bottom: 12.0),
-                      padding: EdgeInsets.zero, // 余白を削る
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        border: Border.all(color: Colors.grey, width: 1.0),
-                        borderRadius: BorderRadius.circular(4.0),
-                      ),
-                      child: InkWell(
-                        onTap: () {
-                          _showImageDialog(
-                            context,
-                            item['title'],
-                            item['imagePath'],
-                          );
-                        },
-                        borderRadius: BorderRadius.circular(4.0),
-                        child: const Padding(
-                          padding: EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 6,
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(Icons.image, size: 16, color: Colors.blue),
-                              SizedBox(width: 4),
-                              Text(
-                                '画像を表示',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: Colors.blue,
-                                  fontWeight: FontWeight.bold,
+                  // 「画像を表示」ボタン専用のタイル（右寄せ・最小サイズ）
+                  if (item['imagePath'] != null)
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: Container(
+                        margin: const EdgeInsets.only(bottom: 12.0),
+                        padding: EdgeInsets.zero, // 余白を削る
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          border: Border.all(color: Colors.grey, width: 1.0),
+                          borderRadius: BorderRadius.circular(4.0),
+                        ),
+                        child: InkWell(
+                          onTap: () {
+                            _showImageDialog(
+                              context,
+                              item['title'],
+                              item['imagePath'],
+                            );
+                          },
+                          borderRadius: BorderRadius.circular(4.0),
+                          child: const Padding(
+                            padding: EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 6,
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.image, size: 16, color: Colors.blue),
+                                SizedBox(width: 4),
+                                Text(
+                                  '画像を表示',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.blue,
+                                    fontWeight: FontWeight.bold,
+                                  ),
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
                         ),
                       ),
                     ),
-                  ),
-                if (item['imagePath'] == null)
-                  const SizedBox(height: 8.0), // 画像がない場合の余白
-              ],
+                  if (item['imagePath'] == null)
+                    const SizedBox(height: 8.0), // 画像がない場合の余白
+                ],
+              ),
             );
           },
         ),
@@ -1437,6 +1566,7 @@ class _TabbedOverviewScreenState extends State<TabbedOverviewScreen> {
       length: 4,
       child: Scaffold(
         appBar: AppBar(
+          automaticallyImplyLeading: false,
           toolbarHeight: 120, // ボタンを表示するために高さを広げます
           centerTitle: true,
           title: Column(
@@ -1539,13 +1669,13 @@ class _TabbedOverviewScreenState extends State<TabbedOverviewScreen> {
           child: TabBarView(
             children: [
               // 状況タブの中身
-              _buildTabContent('状況', widget.data['situation'] ?? ''),
+              _buildTabContent(context, '状況', widget.data['situation'] ?? ''),
               // 概要タブの中身
-              _buildTabContent('概要', widget.data['overview'] ?? ''),
+              _buildTabContent(context, '概要', widget.data['overview'] ?? ''),
               // 詳細タブの中身
-              _buildTabContent('詳細', widget.data['details'] ?? ''),
+              _buildTabContent(context, '詳細', widget.data['details'] ?? ''),
               // 目的タブの中身
-              _buildTabContent('目的', widget.data['purpose'] ?? ''),
+              _buildTabContent(context, '目的', widget.data['purpose'] ?? ''),
             ],
           ),
         ),
@@ -1554,38 +1684,46 @@ class _TabbedOverviewScreenState extends State<TabbedOverviewScreen> {
   }
 
   // タブの中身を作成するヘルパーメソッド
-  Widget _buildTabContent(String title, String content) {
+  Widget _buildTabContent(BuildContext context, String title, String content) {
     return SingleChildScrollView(
-      padding: const EdgeInsets.symmetric(horizontal: 60.0, vertical: 32.0),
-      child: Container(
-        padding: const EdgeInsets.all(24.0),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          border: Border.all(color: Colors.grey, width: 1.0),
-          borderRadius: BorderRadius.circular(8.0),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              title,
-              style: const TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                color: Colors.black87,
+      physics: const AlwaysScrollableScrollPhysics(),
+      child: Column(
+        children: [
+          buildWorkGuideUserHeader(context),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 60.0, vertical: 32.0),
+            child: Container(
+              padding: const EdgeInsets.all(24.0),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                border: Border.all(color: Colors.grey, width: 1.0),
+                borderRadius: BorderRadius.circular(8.0),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black87,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    content,
+                    style: const TextStyle(
+                      fontSize: 18,
+                      height: 1.6, // 行間を少し広げて読みやすく
+                      color: Colors.black87,
+                    ),
+                  ),
+                ],
               ),
             ),
-            const SizedBox(height: 16),
-            Text(
-              content,
-              style: const TextStyle(
-                fontSize: 18,
-                height: 1.6, // 行間を少し広げて読みやすく
-                color: Colors.black87,
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -1627,6 +1765,7 @@ class _TimelineScreenState extends State<TimelineScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        automaticallyImplyLeading: false,
         toolbarHeight: 120, // ボタンを表示するために高さを広げます
         centerTitle: true,
         title: Column(
@@ -1712,79 +1851,87 @@ class _TimelineScreenState extends State<TimelineScreen> {
           ),
         ),
         child: ListView.builder(
-          padding: const EdgeInsets.symmetric(horizontal: 60.0, vertical: 32.0),
-          itemCount: widget.data.length,
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.only(bottom: 32.0),
+          itemCount: widget.data.length + 1,
           itemBuilder: (context, index) {
+            if (index == 0) {
+              return buildWorkGuideUserHeader(context);
+            }
+            final dataIndex = index - 1;
             // IntrinsicHeightは、子の高さに合わせて自分（行）の高さを調整するウィジェットです。
-            return IntrinsicHeight(
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  // 1. 時間を表示する部分（左側）
-                  SizedBox(
-                    width: 80,
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
+            return Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 60.0),
+              child: IntrinsicHeight(
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    // 1. 時間を表示する部分（左側）
+                    SizedBox(
+                      width: 80,
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            widget.data[dataIndex]['time']!,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    // 2. タイムラインの「縦線」と「丸」を描く部分（中央）
+                    Column(
                       children: [
-                        Text(
-                          widget.data[index]['time']!,
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
+                        // 上に伸びる線（最初の項目以外で表示）
+                        Expanded(
+                          child: Container(
+                            width: 2,
+                            color: dataIndex == 0 ? Colors.transparent : Colors.grey,
+                          ),
+                        ),
+                        // 青い丸（現在のポイント）
+                        Container(
+                          width: 12,
+                          height: 12,
+                          decoration: const BoxDecoration(
+                            color: Colors.blue,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                        // 下に伸びる線（最後の項目以外で表示）
+                        Expanded(
+                          child: Container(
+                            width: 2,
+                            color:
+                                dataIndex == widget.data.length - 1
+                                    ? Colors.transparent
+                                    : Colors.grey,
                           ),
                         ),
                       ],
                     ),
-                  ),
-                  // 2. タイムラインの「縦線」と「丸」を描く部分（中央）
-                  Column(
-                    children: [
-                      // 上に伸びる線（最初の項目以外で表示）
-                      Expanded(
-                        child: Container(
-                          width: 2,
-                          color: index == 0 ? Colors.transparent : Colors.grey,
+                    const SizedBox(width: 16),
+                    // 3. 具体的なタスクの内容を表示する部分（右側）
+                    Expanded(
+                      child: Container(
+                        margin: const EdgeInsets.symmetric(vertical: 8.0),
+                        padding: const EdgeInsets.all(16.0),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          border: Border.all(color: Colors.grey, width: 1.0),
+                          borderRadius: BorderRadius.circular(8.0),
                         ),
-                      ),
-                      // 青い丸（現在のポイント）
-                      Container(
-                        width: 12,
-                        height: 12,
-                        decoration: const BoxDecoration(
-                          color: Colors.blue,
-                          shape: BoxShape.circle,
+                        child: Text(
+                          widget.data[dataIndex]['task']!,
+                          style: const TextStyle(fontSize: 16),
                         ),
-                      ),
-                      // 下に伸びる線（最後の項目以外で表示）
-                      Expanded(
-                        child: Container(
-                          width: 2,
-                          color:
-                              index == widget.data.length - 1
-                                  ? Colors.transparent
-                                  : Colors.grey,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(width: 16),
-                  // 3. 具体的なタスクの内容を表示する部分（右側）
-                  Expanded(
-                    child: Container(
-                      margin: const EdgeInsets.symmetric(vertical: 8.0),
-                      padding: const EdgeInsets.all(16.0),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        border: Border.all(color: Colors.grey, width: 1.0),
-                        borderRadius: BorderRadius.circular(8.0),
-                      ),
-                      child: Text(
-                        widget.data[index]['task']!,
-                        style: const TextStyle(fontSize: 16),
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             );
           },
@@ -1838,71 +1985,199 @@ class _EditOverviewScreenState extends State<EditOverviewScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('業務概要編集'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.save),
-            onPressed: () {
-              final newData = {
-                'situation': _situationController.text,
-                'overview': _overviewController.text,
-                'details': _detailsController.text,
-                'purpose': _purposeController.text,
-              };
-              Navigator.pop(context, newData);
-            },
+    return DefaultTabController(
+      length: 4,
+      initialIndex: 2,
+      child: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [Colors.white, Color(0xFFBCBCE8)],
           ),
-        ],
-      ),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          const Text(
-            '状況',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+        ),
+        child: Scaffold(
+          backgroundColor: Colors.transparent,
+          appBar: AppBar(
+            backgroundColor: Colors.white,
+            surfaceTintColor: Colors.white,
+            elevation: 0,
+            centerTitle: true,
+            toolbarHeight: 56.0,
+            leading: IconButton(
+              icon: const Icon(Icons.arrow_back, color: Color(0xFF1A1A1A)),
+              onPressed: () => Navigator.pop(context),
+            ),
+            title: const Text(
+              '作業手順',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: Color(0xFF1A1A1A),
+                fontSize: 20.0,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            bottom: TabBar(
+              labelColor: const Color(0xFF04044C),
+              unselectedLabelColor: Colors.black54,
+              indicatorColor: const Color(0xFF04044C),
+              labelStyle: const TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.bold,
+                height: 1.1,
+              ),
+              unselectedLabelStyle: const TextStyle(
+                fontSize: 10,
+                height: 1.1,
+              ),
+              onTap: (index) {
+                if (index != 2) {
+                  Navigator.pop(context);
+                }
+              },
+              tabs: const [
+                Tab(
+                  icon: Icon(Icons.people_alt_outlined),
+                  child: Text('個人データ\n一覧', textAlign: TextAlign.center),
+                ),
+                Tab(
+                  icon: Icon(Icons.analytics_outlined),
+                  child: Text('分析\n職員用メモ', textAlign: TextAlign.center),
+                ),
+                Tab(
+                  icon: Icon(Icons.app_settings_alt_outlined),
+                  child: Text('機能編集\n管理', textAlign: TextAlign.center),
+                ),
+                Tab(
+                  icon: Icon(Icons.import_export_outlined),
+                  child: Text('外部出力\n連携', textAlign: TextAlign.center),
+                ),
+              ],
+            ),
           ),
-          const SizedBox(height: 8),
-          TextField(
-            controller: _situationController,
-            maxLines: 10,
-            decoration: const InputDecoration(border: OutlineInputBorder()),
+          body: TabBarView(
+            physics: const NeverScrollableScrollPhysics(),
+            children: [
+              const SizedBox(),
+              const SizedBox(),
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Row(
+                          children: [
+                            IconButton(
+                              icon: const Icon(Icons.arrow_back, color: Color(0xFF04044C)),
+                              onPressed: () {
+                                Navigator.pop(context);
+                              },
+                            ),
+                            const Text(
+                              '業務概要編集',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFF04044C),
+                              ),
+                            ),
+                          ],
+                        ),
+                        ElevatedButton.icon(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF04044C),
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          ),
+                          icon: const Icon(Icons.save, size: 18),
+                          label: const Text('保存', style: TextStyle(fontWeight: FontWeight.bold)),
+                          onPressed: () {
+                            final newData = {
+                              'situation': _situationController.text,
+                              'overview': _overviewController.text,
+                              'details': _detailsController.text,
+                              'purpose': _purposeController.text,
+                            };
+                            Navigator.pop(context, newData);
+                          },
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Expanded(
+                      child: ListView(
+                        children: [
+                          const Text(
+                            '状況',
+                            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                          ),
+                          const SizedBox(height: 8),
+                          TextField(
+                            controller: _situationController,
+                            maxLines: 10,
+                            decoration: const InputDecoration(
+                              border: OutlineInputBorder(),
+                              filled: true,
+                              fillColor: Colors.white,
+                            ),
+                          ),
+                          const SizedBox(height: 24),
+                          const Text(
+                            '概要',
+                            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                          ),
+                          const SizedBox(height: 8),
+                          TextField(
+                            controller: _overviewController,
+                            maxLines: 10,
+                            decoration: const InputDecoration(
+                              border: OutlineInputBorder(),
+                              filled: true,
+                              fillColor: Colors.white,
+                            ),
+                          ),
+                          const SizedBox(height: 24),
+                          const Text(
+                            '詳細',
+                            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                          ),
+                          const SizedBox(height: 8),
+                          TextField(
+                            controller: _detailsController,
+                            maxLines: 10,
+                            decoration: const InputDecoration(
+                              border: OutlineInputBorder(),
+                              filled: true,
+                              fillColor: Colors.white,
+                            ),
+                          ),
+                          const SizedBox(height: 24),
+                          const Text(
+                            '目的',
+                            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                          ),
+                          const SizedBox(height: 8),
+                          TextField(
+                            controller: _purposeController,
+                            maxLines: 10,
+                            decoration: const InputDecoration(
+                              border: OutlineInputBorder(),
+                              filled: true,
+                              fillColor: Colors.white,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(),
+            ],
           ),
-          const SizedBox(height: 24),
-          const Text(
-            '概要',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 8),
-          TextField(
-            controller: _overviewController,
-            maxLines: 10,
-            decoration: const InputDecoration(border: OutlineInputBorder()),
-          ),
-          const SizedBox(height: 24),
-          const Text(
-            '詳細',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 8),
-          TextField(
-            controller: _detailsController,
-            maxLines: 10,
-            decoration: const InputDecoration(border: OutlineInputBorder()),
-          ),
-          const SizedBox(height: 24),
-          const Text(
-            '目的',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 8),
-          TextField(
-            controller: _purposeController,
-            maxLines: 10,
-            decoration: const InputDecoration(border: OutlineInputBorder()),
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -1949,77 +2224,196 @@ class _EditTimelineScreenState extends State<EditTimelineScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('スケジュール編集'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.save),
-            onPressed: () {
-              for (int i = 0; i < _timeline.length; i++) {
-                _timeline[i]['time'] = _timeControllers[i].text;
-                _timeline[i]['task'] = _taskControllers[i].text;
-              }
-              Navigator.pop(context, _timeline);
-            },
+    return DefaultTabController(
+      length: 4,
+      initialIndex: 2,
+      child: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [Colors.white, Color(0xFFBCBCE8)],
           ),
-        ],
-      ),
-      body: ListView.builder(
-        padding: const EdgeInsets.all(16),
-        itemCount: _timeline.length,
-        itemBuilder: (context, index) {
-          return Padding(
-            padding: const EdgeInsets.only(bottom: 12),
-            child: Row(
-              children: [
-                SizedBox(
-                  width: 80,
-                  child: TextField(
-                    controller: _timeControllers[index],
-                    decoration: const InputDecoration(
-                      labelText: '時間',
-                      border: OutlineInputBorder(),
-                    ),
-                  ),
+        ),
+        child: Scaffold(
+          backgroundColor: Colors.transparent,
+          appBar: AppBar(
+            backgroundColor: Colors.white,
+            surfaceTintColor: Colors.white,
+            elevation: 0,
+            centerTitle: true,
+            toolbarHeight: 56.0,
+            leading: IconButton(
+              icon: const Icon(Icons.arrow_back, color: Color(0xFF1A1A1A)),
+              onPressed: () => Navigator.pop(context),
+            ),
+            title: const Text(
+              '作業手順',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: Color(0xFF1A1A1A),
+                fontSize: 20.0,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            bottom: TabBar(
+              labelColor: const Color(0xFF04044C),
+              unselectedLabelColor: Colors.black54,
+              indicatorColor: const Color(0xFF04044C),
+              labelStyle: const TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.bold,
+                height: 1.1,
+              ),
+              unselectedLabelStyle: const TextStyle(
+                fontSize: 10,
+                height: 1.1,
+              ),
+              onTap: (index) {
+                if (index != 2) {
+                  Navigator.pop(context);
+                }
+              },
+              tabs: const [
+                Tab(
+                  icon: Icon(Icons.people_alt_outlined),
+                  child: Text('個人データ\n一覧', textAlign: TextAlign.center),
                 ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: TextField(
-                    controller: _taskControllers[index],
-                    decoration: const InputDecoration(
-                      labelText: 'タスク',
-                      border: OutlineInputBorder(),
-                    ),
-                  ),
+                Tab(
+                  icon: Icon(Icons.analytics_outlined),
+                  child: Text('分析\n職員用メモ', textAlign: TextAlign.center),
                 ),
-                const SizedBox(width: 8),
-                IconButton(
-                  icon: const Icon(Icons.delete, color: Colors.red),
-                  onPressed: () {
-                    setState(() {
-                      _timeControllers[index].dispose();
-                      _taskControllers[index].dispose();
-                      _timeControllers.removeAt(index);
-                      _taskControllers.removeAt(index);
-                      _timeline.removeAt(index);
-                    });
-                  },
+                Tab(
+                  icon: Icon(Icons.app_settings_alt_outlined),
+                  child: Text('機能編集\n管理', textAlign: TextAlign.center),
+                ),
+                Tab(
+                  icon: Icon(Icons.import_export_outlined),
+                  child: Text('外部出力\n連携', textAlign: TextAlign.center),
                 ),
               ],
             ),
-          );
-        },
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          setState(() {
-            _timeline.add({'time': '', 'task': ''});
-            _timeControllers.add(TextEditingController());
-            _taskControllers.add(TextEditingController());
-          });
-        },
-        child: const Icon(Icons.add),
+          ),
+          body: TabBarView(
+            physics: const NeverScrollableScrollPhysics(),
+            children: [
+              const SizedBox(),
+              const SizedBox(),
+              Scaffold(
+                backgroundColor: Colors.transparent,
+                body: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Row(
+                            children: [
+                              IconButton(
+                                icon: const Icon(Icons.arrow_back, color: Color(0xFF04044C)),
+                                onPressed: () {
+                                  Navigator.pop(context);
+                                },
+                              ),
+                              const Text(
+                                'スケジュール編集',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.bold,
+                                  color: Color(0xFF04044C),
+                                ),
+                              ),
+                            ],
+                          ),
+                          ElevatedButton.icon(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF04044C),
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                            ),
+                            icon: const Icon(Icons.save, size: 18),
+                            label: const Text('保存', style: TextStyle(fontWeight: FontWeight.bold)),
+                            onPressed: () {
+                              for (int i = 0; i < _timeline.length; i++) {
+                                _timeline[i]['time'] = _timeControllers[i].text;
+                                _timeline[i]['task'] = _taskControllers[i].text;
+                              }
+                              Navigator.pop(context, _timeline);
+                            },
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      Expanded(
+                        child: ListView.builder(
+                          itemCount: _timeline.length,
+                          itemBuilder: (context, index) {
+                            return Padding(
+                              padding: const EdgeInsets.only(bottom: 12),
+                              child: Row(
+                                children: [
+                                  SizedBox(
+                                    width: 80,
+                                    child: TextField(
+                                      controller: _timeControllers[index],
+                                      decoration: const InputDecoration(
+                                        labelText: '時間',
+                                        border: OutlineInputBorder(),
+                                        filled: true,
+                                        fillColor: Colors.white,
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 16),
+                                  Expanded(
+                                    child: TextField(
+                                      controller: _taskControllers[index],
+                                      decoration: const InputDecoration(
+                                        labelText: 'タスク',
+                                        border: OutlineInputBorder(),
+                                        filled: true,
+                                        fillColor: Colors.white,
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  IconButton(
+                                    icon: const Icon(Icons.delete, color: Colors.red),
+                                    onPressed: () {
+                                      setState(() {
+                                        _timeControllers[index].dispose();
+                                        _taskControllers[index].dispose();
+                                        _timeControllers.removeAt(index);
+                                        _taskControllers.removeAt(index);
+                                        _timeline.removeAt(index);
+                                      });
+                                    },
+                                  ),
+                                ],
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                floatingActionButton: FloatingActionButton(
+                  onPressed: () {
+                    setState(() {
+                      _timeline.add({'time': '', 'task': ''});
+                      _timeControllers.add(TextEditingController());
+                      _taskControllers.add(TextEditingController());
+                    });
+                  },
+                  child: const Icon(Icons.add),
+                ),
+              ),
+              const SizedBox(),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -2072,92 +2466,206 @@ class _EditChecklistScreenState extends State<EditChecklistScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('チェックリスト編集'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.save),
-            onPressed: () {
-              // コントローラーの値をデータに反映
-              for (int i = 0; i < _steps.length; i++) {
-                _steps[i]['title'] = _controllers[i].text;
-              }
-              // データを返して画面を閉じる
-              Navigator.pop(context, _steps);
-            },
+    return DefaultTabController(
+      length: 4,
+      initialIndex: 2,
+      child: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [Colors.white, Color(0xFFBCBCE8)],
           ),
-        ],
-      ),
-      body: ListView.builder(
-        padding: const EdgeInsets.all(16),
-        itemCount: _steps.length,
-        itemBuilder: (context, index) {
-          return Padding(
-            padding: const EdgeInsets.only(bottom: 12),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextField(
-                        controller: _controllers[index],
-                        decoration: InputDecoration(
-                          labelText: '手順${index + 1}',
-                          border: const OutlineInputBorder(),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    IconButton(
-                      icon: const Icon(Icons.delete, color: Colors.red),
-                      onPressed: () {
-                        setState(() {
-                          _controllers[index].dispose();
-                          _controllers.removeAt(index);
-                          _steps.removeAt(index);
-                        });
-                      },
-                    ),
-                  ],
+        ),
+        child: Scaffold(
+          backgroundColor: Colors.transparent,
+          appBar: AppBar(
+            backgroundColor: Colors.white,
+            surfaceTintColor: Colors.white,
+            elevation: 0,
+            centerTitle: true,
+            toolbarHeight: 56.0,
+            leading: IconButton(
+              icon: const Icon(Icons.arrow_back, color: Color(0xFF1A1A1A)),
+              onPressed: () => Navigator.pop(context),
+            ),
+            title: const Text(
+              '作業手順',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: Color(0xFF1A1A1A),
+                fontSize: 20.0,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            bottom: TabBar(
+              labelColor: const Color(0xFF04044C),
+              unselectedLabelColor: Colors.black54,
+              indicatorColor: const Color(0xFF04044C),
+              labelStyle: const TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.bold,
+                height: 1.1,
+              ),
+              unselectedLabelStyle: const TextStyle(
+                fontSize: 10,
+                height: 1.1,
+              ),
+              onTap: (index) {
+                if (index != 2) {
+                  Navigator.pop(context);
+                }
+              },
+              tabs: const [
+                Tab(
+                  icon: Icon(Icons.people_alt_outlined),
+                  child: Text('個人データ\n一覧', textAlign: TextAlign.center),
                 ),
-                // 右下に「画像を追加」ボタンを配置
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    if (_steps[index]['imagePath'] != null)
-                      const Padding(
-                        padding: EdgeInsets.only(right: 8.0),
-                        child: Icon(
-                          Icons.check_circle,
-                          color: Colors.green,
-                          size: 16,
-                        ),
-                      ),
-                    TextButton.icon(
-                      onPressed: () => _pickImage(index),
-                      icon: const Icon(Icons.add_a_photo, size: 16),
-                      label: const Text(
-                        '画像をアップロード',
-                        style: TextStyle(fontSize: 12),
-                      ),
-                    ),
-                  ],
+                Tab(
+                  icon: Icon(Icons.analytics_outlined),
+                  child: Text('分析\n職員用メモ', textAlign: TextAlign.center),
+                ),
+                Tab(
+                  icon: Icon(Icons.app_settings_alt_outlined),
+                  child: Text('機能編集\n管理', textAlign: TextAlign.center),
+                ),
+                Tab(
+                  icon: Icon(Icons.import_export_outlined),
+                  child: Text('外部出力\n連携', textAlign: TextAlign.center),
                 ),
               ],
             ),
-          );
-        },
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          setState(() {
-            _steps.add({'title': '', 'isChecked': false, 'imagePath': null});
-            _controllers.add(TextEditingController());
-          });
-        },
-        child: const Icon(Icons.add),
+          ),
+          body: TabBarView(
+            physics: const NeverScrollableScrollPhysics(),
+            children: [
+              const SizedBox(),
+              const SizedBox(),
+              Scaffold(
+                backgroundColor: Colors.transparent,
+                body: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Row(
+                            children: [
+                              IconButton(
+                                icon: const Icon(Icons.arrow_back, color: Color(0xFF04044C)),
+                                onPressed: () {
+                                  Navigator.pop(context);
+                                },
+                              ),
+                              const Text(
+                                'チェックリスト編集',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.bold,
+                                  color: Color(0xFF04044C),
+                                ),
+                              ),
+                            ],
+                          ),
+                          ElevatedButton.icon(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF04044C),
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                            ),
+                            icon: const Icon(Icons.save, size: 18),
+                            label: const Text('保存', style: TextStyle(fontWeight: FontWeight.bold)),
+                            onPressed: () {
+                              for (int i = 0; i < _steps.length; i++) {
+                                _steps[i]['title'] = _controllers[i].text;
+                              }
+                              Navigator.pop(context, _steps);
+                            },
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      Expanded(
+                        child: ListView.builder(
+                          itemCount: _steps.length,
+                          itemBuilder: (context, index) {
+                            return Padding(
+                              padding: const EdgeInsets.only(bottom: 12),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.end,
+                                children: [
+                                  Row(
+                                    children: [
+                                      Expanded(
+                                        child: TextField(
+                                          controller: _controllers[index],
+                                          decoration: InputDecoration(
+                                            labelText: '手順${index + 1}',
+                                            border: const OutlineInputBorder(),
+                                            filled: true,
+                                            fillColor: Colors.white,
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      IconButton(
+                                        icon: const Icon(Icons.delete, color: Colors.red),
+                                        onPressed: () {
+                                          setState(() {
+                                            _controllers[index].dispose();
+                                            _controllers.removeAt(index);
+                                            _steps.removeAt(index);
+                                          });
+                                        },
+                                      ),
+                                    ],
+                                  ),
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.end,
+                                    children: [
+                                      if (_steps[index]['imagePath'] != null)
+                                        const Padding(
+                                          padding: EdgeInsets.only(right: 8.0),
+                                          child: Icon(
+                                            Icons.check_circle,
+                                            color: Colors.green,
+                                            size: 16,
+                                          ),
+                                        ),
+                                      TextButton.icon(
+                                        onPressed: () => _pickImage(index),
+                                        icon: const Icon(Icons.add_a_photo, size: 16),
+                                        label: const Text(
+                                          '画像をアップロード',
+                                          style: TextStyle(fontSize: 12),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                floatingActionButton: FloatingActionButton(
+                  onPressed: () {
+                    setState(() {
+                      _steps.add({'title': '', 'isChecked': false, 'imagePath': null});
+                      _controllers.add(TextEditingController());
+                    });
+                  },
+                  child: const Icon(Icons.add),
+                ),
+              ),
+              const SizedBox(),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -2275,6 +2783,7 @@ class _FlowchartScreenState extends State<FlowchartScreen> {
 
     return Scaffold(
       appBar: AppBar(
+        automaticallyImplyLeading: false,
         toolbarHeight: 120, // ボタンを表示するために高さを広げます
         centerTitle: true,
         title: Column(
@@ -2352,6 +2861,8 @@ class _FlowchartScreenState extends State<FlowchartScreen> {
         backgroundColor: Colors.white,
       ),
       body: Container(
+        width: double.infinity,
+        height: double.infinity,
         decoration: const BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topCenter,
@@ -2359,17 +2870,25 @@ class _FlowchartScreenState extends State<FlowchartScreen> {
             colors: [Color(0xFFFFFFFF), Color(0xFFBCBCE8)],
           ),
         ),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 24.0, horizontal: 50.0),
-          child: Center(
-            child:
-                _showInstruction
-                    ? _buildInstructionView(
-                      currentQuestion['instruction'] ?? '指示がありません',
-                    )
-                    : _buildQuestionView(
-                      currentQuestion['question'] ?? '質問がありません',
-                    ),
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          child: Column(
+            children: [
+              buildWorkGuideUserHeader(context),
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 24.0, horizontal: 50.0),
+                child: Center(
+                  child:
+                      _showInstruction
+                          ? _buildInstructionView(
+                            currentQuestion['instruction'] ?? '指示がありません',
+                          )
+                          : _buildQuestionView(
+                            currentQuestion['question'] ?? '質問がありません',
+                          ),
+                ),
+              ),
+            ],
           ),
         ),
       ),
@@ -2570,6 +3089,7 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        automaticallyImplyLeading: false,
         toolbarHeight: 120, // ボタンを表示するために高さを広げます
         centerTitle: true,
         title: Column(
@@ -2658,55 +3178,59 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
           children: [
             Expanded(
               child: ListView.builder(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 60.0,
-                  vertical: 16.0,
-                ),
-                itemCount: _messages.length,
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: const EdgeInsets.only(bottom: 16.0),
+                itemCount: _messages.length + 1,
                 itemBuilder: (context, index) {
-                  final message = _messages[index];
+                  if (index == 0) {
+                    return buildWorkGuideUserHeader(context);
+                  }
+                  final message = _messages[index - 1];
                   final isUser = message['sender'] == 'user';
                   final options = message['options'] as List<String>?;
 
-                  return Column(
-                    crossAxisAlignment:
-                        isUser
-                            ? CrossAxisAlignment.end
-                            : CrossAxisAlignment.start,
-                    children: [
-                      Container(
-                        margin: const EdgeInsets.symmetric(vertical: 4.0),
-                        padding: const EdgeInsets.all(12.0),
-                        decoration: BoxDecoration(
-                          color: isUser ? Colors.blue[100] : Colors.grey[200],
-                          borderRadius: BorderRadius.circular(16.0),
-                        ),
-                        child: Text(
-                          message['text']!,
-                          style: const TextStyle(fontSize: 16),
-                        ),
-                      ),
-                      // 選択肢ボタン（ボットからのメッセージの場合）
-                      if (!isUser && options != null)
-                        Padding(
-                          padding: const EdgeInsets.only(
-                            top: 8.0,
-                            bottom: 16.0,
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 60.0),
+                    child: Column(
+                      crossAxisAlignment:
+                          isUser
+                              ? CrossAxisAlignment.end
+                              : CrossAxisAlignment.start,
+                      children: [
+                        Container(
+                          margin: const EdgeInsets.symmetric(vertical: 4.0),
+                          padding: const EdgeInsets.all(12.0),
+                          decoration: BoxDecoration(
+                            color: isUser ? Colors.blue[100] : Colors.grey[200],
+                            borderRadius: BorderRadius.circular(16.0),
                           ),
-                          child: Wrap(
-                            spacing: 8.0,
-                            runSpacing: 8.0,
-                            children:
-                                options.map((option) {
-                                  return ActionChip(
-                                    label: Text(option),
-                                    onPressed:
-                                        () => _handleChoiceSelected(option),
-                                  );
-                                }).toList(),
+                          child: Text(
+                            message['text']!,
+                            style: const TextStyle(fontSize: 16),
                           ),
                         ),
-                    ],
+                        // 選択肢ボタン（ボットからのメッセージの場合）
+                        if (!isUser && options != null)
+                          Padding(
+                            padding: const EdgeInsets.only(
+                              top: 8.0,
+                              bottom: 16.0,
+                            ),
+                            child: Wrap(
+                              spacing: 8.0,
+                              runSpacing: 8.0,
+                              children:
+                                  options.map((option) {
+                                    return ActionChip(
+                                      label: Text(option),
+                                      onPressed:
+                                          () => _handleChoiceSelected(option),
+                                    );
+                                  }).toList(),
+                            ),
+                          ),
+                      ],
+                    ),
                   );
                 },
               ),
@@ -2785,82 +3309,200 @@ class _EditFlowchartScreenState extends State<EditFlowchartScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('フローチャート編集'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.save),
-            onPressed: () {
-              for (int i = 0; i < _flowchart.length; i++) {
-                _flowchart[i]['question'] = _questionControllers[i].text;
-                _flowchart[i]['instruction'] = _instructionControllers[i].text;
-              }
-              Navigator.pop(context, _flowchart);
-            },
+    return DefaultTabController(
+      length: 4,
+      initialIndex: 2,
+      child: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [Colors.white, Color(0xFFBCBCE8)],
           ),
-        ],
-      ),
-      body: ListView.builder(
-        padding: const EdgeInsets.all(16),
-        itemCount: _flowchart.length,
-        itemBuilder: (context, index) {
-          return Padding(
-            padding: const EdgeInsets.only(bottom: 24),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Text(
-                      'ステップ ${index + 1}',
-                      style: const TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                    const Spacer(),
-                    IconButton(
-                      icon: const Icon(Icons.delete, color: Colors.red),
-                      onPressed: () {
-                        setState(() {
-                          _questionControllers[index].dispose();
-                          _instructionControllers[index].dispose();
-                          _questionControllers.removeAt(index);
-                          _instructionControllers.removeAt(index);
-                          _flowchart.removeAt(index);
-                        });
-                      },
-                    ),
-                  ],
+        ),
+        child: Scaffold(
+          backgroundColor: Colors.transparent,
+          appBar: AppBar(
+            backgroundColor: Colors.white.withOpacity(0.9),
+            elevation: 0,
+            centerTitle: true,
+            leading: IconButton(
+              icon: const Icon(Icons.arrow_back, color: Color(0xFF04044C)),
+              onPressed: () => Navigator.pop(context),
+            ),
+            title: const Text(
+              '作業手順',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: Color(0xFF04044C),
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                height: 1.2,
+              ),
+            ),
+            bottom: TabBar(
+              labelColor: const Color(0xFF04044C),
+              unselectedLabelColor: Colors.black54,
+              indicatorColor: const Color(0xFF04044C),
+              labelStyle: const TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.bold,
+                height: 1.1,
+              ),
+              unselectedLabelStyle: const TextStyle(
+                fontSize: 10,
+                height: 1.1,
+              ),
+              onTap: (index) {
+                if (index != 2) {
+                  Navigator.pop(context);
+                }
+              },
+              tabs: const [
+                Tab(
+                  icon: Icon(Icons.people_alt_outlined),
+                  child: Text('個人データ\n一覧', textAlign: TextAlign.center),
                 ),
-                const SizedBox(height: 8),
-                TextField(
-                  controller: _questionControllers[index],
-                  decoration: const InputDecoration(
-                    labelText: '質問（はい/いいえで答えられるもの）',
-                    border: OutlineInputBorder(),
-                  ),
+                Tab(
+                  icon: Icon(Icons.analytics_outlined),
+                  child: Text('分析\n職員用メモ', textAlign: TextAlign.center),
                 ),
-                const SizedBox(height: 8),
-                TextField(
-                  controller: _instructionControllers[index],
-                  decoration: const InputDecoration(
-                    labelText: '「いいえ」の場合の指示',
-                    border: OutlineInputBorder(),
-                  ),
+                Tab(
+                  icon: Icon(Icons.app_settings_alt_outlined),
+                  child: Text('機能編集\n管理', textAlign: TextAlign.center),
+                ),
+                Tab(
+                  icon: Icon(Icons.import_export_outlined),
+                  child: Text('外部出力\n連携', textAlign: TextAlign.center),
                 ),
               ],
             ),
-          );
-        },
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          setState(() {
-            _flowchart.add({'question': '', 'instruction': ''});
-            _questionControllers.add(TextEditingController());
-            _instructionControllers.add(TextEditingController());
-          });
-        },
-        child: const Icon(Icons.add),
+          ),
+          body: TabBarView(
+            physics: const NeverScrollableScrollPhysics(),
+            children: [
+              const SizedBox(),
+              const SizedBox(),
+              Scaffold(
+                backgroundColor: Colors.transparent,
+                body: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Row(
+                            children: [
+                              IconButton(
+                                icon: const Icon(Icons.arrow_back, color: Color(0xFF04044C)),
+                                onPressed: () {
+                                  Navigator.pop(context);
+                                },
+                              ),
+                              const Text(
+                                'フローチャート編集',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.bold,
+                                  color: Color(0xFF04044C),
+                                ),
+                              ),
+                            ],
+                          ),
+                          ElevatedButton.icon(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF04044C),
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                            ),
+                            icon: const Icon(Icons.save, size: 18),
+                            label: const Text('保存', style: TextStyle(fontWeight: FontWeight.bold)),
+                            onPressed: () {
+                              for (int i = 0; i < _flowchart.length; i++) {
+                                _flowchart[i]['question'] = _questionControllers[i].text;
+                                _flowchart[i]['instruction'] = _instructionControllers[i].text;
+                              }
+                              Navigator.pop(context, _flowchart);
+                            },
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      Expanded(
+                        child: ListView.builder(
+                          itemCount: _flowchart.length,
+                          itemBuilder: (context, index) {
+                            return Padding(
+                              padding: const EdgeInsets.only(bottom: 24),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: [
+                                      Text(
+                                        'ステップ ${index + 1}',
+                                        style: const TextStyle(fontWeight: FontWeight.bold),
+                                      ),
+                                      const Spacer(),
+                                      IconButton(
+                                        icon: const Icon(Icons.delete, color: Colors.red),
+                                        onPressed: () {
+                                          setState(() {
+                                            _questionControllers[index].dispose();
+                                            _instructionControllers[index].dispose();
+                                            _questionControllers.removeAt(index);
+                                            _instructionControllers.removeAt(index);
+                                            _flowchart.removeAt(index);
+                                          });
+                                        },
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 8),
+                                  TextField(
+                                    controller: _questionControllers[index],
+                                    decoration: const InputDecoration(
+                                      labelText: '質問（はい/いいえで答えられるもの）',
+                                      border: OutlineInputBorder(),
+                                      filled: true,
+                                      fillColor: Colors.white,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  TextField(
+                                    controller: _instructionControllers[index],
+                                    decoration: const InputDecoration(
+                                      labelText: '「いいえ」の場合の指示',
+                                      border: OutlineInputBorder(),
+                                      filled: true,
+                                      fillColor: Colors.white,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                floatingActionButton: FloatingActionButton(
+                  onPressed: () {
+                    setState(() {
+                      _flowchart.add({'question': '', 'instruction': ''});
+                      _questionControllers.add(TextEditingController());
+                      _instructionControllers.add(TextEditingController());
+                    });
+                  },
+                  child: const Icon(Icons.add),
+                ),
+              ),
+              const SizedBox(),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -3095,224 +3737,345 @@ class _EditChatbotScreenState extends State<EditChatbotScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Q&A会話フロー編集'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.save),
-            onPressed: () {
-              final result = {
-                'initialMessage': _initialMessageController.text,
-                'initialOptions': _initialOptions,
-                'conversations': _conversations,
-                'fallbackMessage': _fallbackMessageController.text,
-                'fallbackOptions': _fallbackOptions,
-              };
-              Navigator.pop(context, result);
-            },
+    return DefaultTabController(
+      length: 4,
+      initialIndex: 2,
+      child: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [Colors.white, Color(0xFFBCBCE8)],
           ),
-        ],
-      ),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          const Text(
-            '初期メッセージ',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 8),
-          TextField(
-            controller: _initialMessageController,
-            decoration: const InputDecoration(
-              border: OutlineInputBorder(),
-              hintText: '最初に表示するメッセージ',
+        ),
+        child: Scaffold(
+          backgroundColor: Colors.transparent,
+          appBar: AppBar(
+            backgroundColor: Colors.white.withOpacity(0.9),
+            elevation: 0,
+            centerTitle: true,
+            leading: IconButton(
+              icon: const Icon(Icons.arrow_back, color: Color(0xFF04044C)),
+              onPressed: () => Navigator.pop(context),
+            ),
+            title: const Text(
+              '作業手順',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: Color(0xFF04044C),
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                height: 1.2,
+              ),
+            ),
+            bottom: TabBar(
+              labelColor: const Color(0xFF04044C),
+              unselectedLabelColor: Colors.black54,
+              indicatorColor: const Color(0xFF04044C),
+              labelStyle: const TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.bold,
+                height: 1.1,
+              ),
+              unselectedLabelStyle: const TextStyle(
+                fontSize: 10,
+                height: 1.1,
+              ),
+              onTap: (index) {
+                if (index != 2) {
+                  Navigator.pop(context);
+                }
+              },
+              tabs: const [
+                Tab(
+                  icon: Icon(Icons.people_alt_outlined),
+                  child: Text('個人データ\n一覧', textAlign: TextAlign.center),
+                ),
+                Tab(
+                  icon: Icon(Icons.analytics_outlined),
+                  child: Text('分析\n職員用メモ', textAlign: TextAlign.center),
+                ),
+                Tab(
+                  icon: Icon(Icons.app_settings_alt_outlined),
+                  child: Text('機能編集\n管理', textAlign: TextAlign.center),
+                ),
+                Tab(
+                  icon: Icon(Icons.import_export_outlined),
+                  child: Text('外部出力\n連携', textAlign: TextAlign.center),
+                ),
+              ],
             ),
           ),
-          const SizedBox(height: 16),
-          const Text(
-            '初期選択肢',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 8),
-          ..._initialOptions.asMap().entries.map((entry) {
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 8),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Chip(
-                      label: Text(entry.value),
-                      onDeleted: () => _removeInitialOption(entry.key),
-                    ),
-                  ),
-                ],
-              ),
-            );
-          }),
-          ElevatedButton.icon(
-            onPressed: () {
-              final controller = TextEditingController();
-              showDialog(
-                context: context,
-                builder:
-                    (context) => AlertDialog(
-                      title: const Text('選択肢を追加'),
-                      content: TextField(
-                        controller: controller,
-                        decoration: const InputDecoration(
-                          labelText: '選択肢テキスト',
-                          border: OutlineInputBorder(),
+          body: TabBarView(
+            physics: const NeverScrollableScrollPhysics(),
+            children: [
+              const SizedBox(),
+              const SizedBox(),
+              Scaffold(
+                backgroundColor: Colors.transparent,
+                body: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Row(
+                            children: [
+                              IconButton(
+                                icon: const Icon(Icons.arrow_back, color: Color(0xFF04044C)),
+                                onPressed: () {
+                                  Navigator.pop(context);
+                                },
+                              ),
+                              const Text(
+                                'Q&A会話フロー編集',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.bold,
+                                  color: Color(0xFF04044C),
+                                ),
+                              ),
+                            ],
+                          ),
+                          ElevatedButton.icon(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF04044C),
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                            ),
+                            icon: const Icon(Icons.save, size: 18),
+                            label: const Text('保存', style: TextStyle(fontWeight: FontWeight.bold)),
+                            onPressed: () {
+                              final result = {
+                                'initialMessage': _initialMessageController.text,
+                                'initialOptions': _initialOptions,
+                                'conversations': _conversations,
+                                'fallbackMessage': _fallbackMessageController.text,
+                                'fallbackOptions': _fallbackOptions,
+                              };
+                              Navigator.pop(context, result);
+                            },
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      Expanded(
+                        child: ListView(
+                          children: [
+                            const Text(
+                              '初期メッセージ',
+                              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                            ),
+                            const SizedBox(height: 8),
+                            TextField(
+                              controller: _initialMessageController,
+                              decoration: const InputDecoration(
+                                border: OutlineInputBorder(),
+                                hintText: '最初に表示するメッセージ',
+                                filled: true,
+                                fillColor: Colors.white,
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                            const Text(
+                              '初期選択肢',
+                              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                            ),
+                            const SizedBox(height: 8),
+                            ..._initialOptions.asMap().entries.map((entry) {
+                              return Padding(
+                                padding: const EdgeInsets.only(bottom: 8),
+                                child: Row(
+                                  children: [
+                                    Expanded(
+                                      child: Chip(
+                                        backgroundColor: Colors.white,
+                                        label: Text(entry.value),
+                                        onDeleted: () => _removeInitialOption(entry.key),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            }),
+                            ElevatedButton.icon(
+                              onPressed: () {
+                                final controller = TextEditingController();
+                                showDialog(
+                                  context: context,
+                                  builder:
+                                      (context) => AlertDialog(
+                                        title: const Text('選択肢を追加'),
+                                        content: TextField(
+                                          controller: controller,
+                                          decoration: const InputDecoration(
+                                            labelText: '選択肢テキスト',
+                                            border: OutlineInputBorder(),
+                                          ),
+                                        ),
+                                        actions: [
+                                          TextButton(
+                                            onPressed: () => Navigator.pop(context),
+                                            child: const Text('キャンセル'),
+                                          ),
+                                          TextButton(
+                                            onPressed: () {
+                                              _addInitialOption(controller.text);
+                                              Navigator.pop(context);
+                                            },
+                                            child: const Text('追加'),
+                                          ),
+                                        ],
+                                      ),
+                                );
+                              },
+                              icon: const Icon(Icons.add),
+                              label: const Text('選択肢を追加'),
+                            ),
+                            const SizedBox(height: 24),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                const Text(
+                                  '会話フロー',
+                                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                                ),
+                                ElevatedButton.icon(
+                                  onPressed: _addConversation,
+                                  icon: const Icon(Icons.add),
+                                  label: const Text('会話を追加'),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                            if (_conversations.isEmpty)
+                              const Padding(
+                                padding: EdgeInsets.all(16),
+                                child: Text(
+                                  '会話フローが登録されていません。\n「会話を追加」ボタンから追加してください。',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(color: Colors.grey),
+                                ),
+                              ),
+                            ..._conversations.entries.map((entry) {
+                              final conversation = entry.value;
+                              final options = conversation['options'] as List<dynamic>;
+                              return Card(
+                                color: Colors.white.withOpacity(0.9),
+                                margin: const EdgeInsets.only(bottom: 8),
+                                child: ListTile(
+                                  title: Text(
+                                    entry.key,
+                                    style: const TextStyle(fontWeight: FontWeight.bold),
+                                  ),
+                                  subtitle: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      const SizedBox(height: 4),
+                                      Text('応答: ${conversation['response']}'),
+                                      if (options.isNotEmpty) Text('選択肢: ${options.join(', ')}'),
+                                    ],
+                                  ),
+                                  trailing: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      IconButton(
+                                        icon: const Icon(Icons.edit),
+                                        onPressed: () => _editConversation(entry.key),
+                                      ),
+                                      IconButton(
+                                        icon: const Icon(Icons.delete, color: Colors.red),
+                                        onPressed: () => _deleteConversation(entry.key),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              );
+                            }),
+                            const SizedBox(height: 24),
+                            const Text(
+                              'フォールバックメッセージ',
+                              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                            ),
+                            const SizedBox(height: 8),
+                            TextField(
+                              controller: _fallbackMessageController,
+                              maxLines: 2,
+                              decoration: const InputDecoration(
+                                border: OutlineInputBorder(),
+                                hintText: '不明な質問に対する返答',
+                                filled: true,
+                                fillColor: Colors.white,
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                            const Text(
+                              'フォールバック選択肢',
+                              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                            ),
+                            const SizedBox(height: 8),
+                            ..._fallbackOptions.asMap().entries.map((entry) {
+                              return Padding(
+                                padding: const EdgeInsets.only(bottom: 8),
+                                child: Row(
+                                  children: [
+                                    Expanded(
+                                      child: Chip(
+                                        backgroundColor: Colors.white,
+                                        label: Text(entry.value),
+                                        onDeleted: () => _removeFallbackOption(entry.key),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            }),
+                            ElevatedButton.icon(
+                              onPressed: () {
+                                final controller = TextEditingController();
+                                showDialog(
+                                  context: context,
+                                  builder:
+                                      (context) => AlertDialog(
+                                        title: const Text('選択肢を追加'),
+                                        content: TextField(
+                                          controller: controller,
+                                          decoration: const InputDecoration(
+                                            labelText: '選択肢テキスト',
+                                            border: OutlineInputBorder(),
+                                          ),
+                                        ),
+                                        actions: [
+                                          TextButton(
+                                            onPressed: () => Navigator.pop(context),
+                                            child: const Text('キャンセル'),
+                                          ),
+                                          TextButton(
+                                            onPressed: () {
+                                              _addFallbackOption(controller.text);
+                                              Navigator.pop(context);
+                                            },
+                                            child: const Text('追加'),
+                                          ),
+                                        ],
+                                      ),
+                                );
+                              },
+                              icon: const Icon(Icons.add),
+                              label: const Text('選択肢を追加'),
+                            ),
+                          ],
                         ),
                       ),
-                      actions: [
-                        TextButton(
-                          onPressed: () => Navigator.pop(context),
-                          child: const Text('キャンセル'),
-                        ),
-                        TextButton(
-                          onPressed: () {
-                            _addInitialOption(controller.text);
-                            Navigator.pop(context);
-                          },
-                          child: const Text('追加'),
-                        ),
-                      ],
-                    ),
-              );
-            },
-            icon: const Icon(Icons.add),
-            label: const Text('選択肢を追加'),
-          ),
-          const SizedBox(height: 24),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text(
-                '会話フロー',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    ],
+                  ),
+                ),
               ),
-              ElevatedButton.icon(
-                onPressed: _addConversation,
-                icon: const Icon(Icons.add),
-                label: const Text('会話を追加'),
-              ),
+              const SizedBox(),
             ],
           ),
-          const SizedBox(height: 8),
-          if (_conversations.isEmpty)
-            const Padding(
-              padding: EdgeInsets.all(16),
-              child: Text(
-                '会話フローが登録されていません。\n「会話を追加」ボタンから追加してください。',
-                textAlign: TextAlign.center,
-                style: TextStyle(color: Colors.grey),
-              ),
-            ),
-          ..._conversations.entries.map((entry) {
-            final conversation = entry.value;
-            final options = conversation['options'] as List<dynamic>;
-            return Card(
-              margin: const EdgeInsets.only(bottom: 8),
-              child: ListTile(
-                title: Text(
-                  entry.key,
-                  style: const TextStyle(fontWeight: FontWeight.bold),
-                ),
-                subtitle: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const SizedBox(height: 4),
-                    Text('応答: ${conversation['response']}'),
-                    if (options.isNotEmpty) Text('選択肢: ${options.join(', ')}'),
-                  ],
-                ),
-                trailing: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    IconButton(
-                      icon: const Icon(Icons.edit),
-                      onPressed: () => _editConversation(entry.key),
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.delete, color: Colors.red),
-                      onPressed: () => _deleteConversation(entry.key),
-                    ),
-                  ],
-                ),
-              ),
-            );
-          }),
-          const SizedBox(height: 24),
-          const Text(
-            'フォールバックメッセージ',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 8),
-          TextField(
-            controller: _fallbackMessageController,
-            maxLines: 2,
-            decoration: const InputDecoration(
-              border: OutlineInputBorder(),
-              hintText: '不明な質問に対する返答',
-            ),
-          ),
-          const SizedBox(height: 16),
-          const Text(
-            'フォールバック選択肢',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 8),
-          ..._fallbackOptions.asMap().entries.map((entry) {
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 8),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Chip(
-                      label: Text(entry.value),
-                      onDeleted: () => _removeFallbackOption(entry.key),
-                    ),
-                  ),
-                ],
-              ),
-            );
-          }),
-          ElevatedButton.icon(
-            onPressed: () {
-              final controller = TextEditingController();
-              showDialog(
-                context: context,
-                builder:
-                    (context) => AlertDialog(
-                      title: const Text('選択肢を追加'),
-                      content: TextField(
-                        controller: controller,
-                        decoration: const InputDecoration(
-                          labelText: '選択肢テキスト',
-                          border: OutlineInputBorder(),
-                        ),
-                      ),
-                      actions: [
-                        TextButton(
-                          onPressed: () => Navigator.pop(context),
-                          child: const Text('キャンセル'),
-                        ),
-                        TextButton(
-                          onPressed: () {
-                            _addFallbackOption(controller.text);
-                            Navigator.pop(context);
-                          },
-                          child: const Text('追加'),
-                        ),
-                      ],
-                    ),
-              );
-            },
-            icon: const Icon(Icons.add),
-            label: const Text('選択肢を追加'),
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -3529,268 +4292,390 @@ class _EditSpScreenState extends State<EditSpScreen> {
     final skillsSp = Map<String, dynamic>.from(widget.initialSpData['skillsSp'] ?? {'画力': 0, '創造性': 0, '構成力': 0, '表現力': 0, '集中力': 0, '効率性': 0});
     final categories = skillsSp.keys.toList();
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('SP編集（${widget.selectedTask}）'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.save),
-            onPressed: () {
-              _levelTitles[_selectedLevel] = _titleController.text;
-
-              _categoryGoals.forEach((cat, goals) {
-                final tControllers = _goalTitleControllers[cat] ?? [];
-                final sControllers = _goalSpControllers[cat] ?? [];
-                for (int i = 0; i < goals.length; i++) {
-                  if (i < tControllers.length) goals[i]['title'] = tControllers[i].text;
-                  if (i < sControllers.length) goals[i]['sp'] = int.tryParse(sControllers[i].text) ?? 20;
-                }
-              });
-
-              final updatedSpData = Map<String, dynamic>.from(widget.initialSpData);
-              updatedSpData['titleName'] = _levelTitles[_selectedLevel];
-              updatedSpData['totalLevel'] = _selectedLevel;
-              updatedSpData['levelTitles'] = _levelTitles;
-              updatedSpData['categoryGoals'] = _categoryGoals;
-
-              Navigator.pop(context, updatedSpData);
-            },
+    return DefaultTabController(
+      length: 4,
+      initialIndex: 2,
+      child: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [Colors.white, Color(0xFFBCBCE8)],
           ),
-        ],
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Card(
-              elevation: 2,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'レベル別 称号設定',
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                    ),
-                    const SizedBox(height: 8),
-                    const Text(
-                      '編集したいレベルを選択し、対応する称号名を入力してください。',
-                      style: TextStyle(color: Colors.grey, fontSize: 13),
-                    ),
-                    const SizedBox(height: 16),
-                    Row(
-                      children: [
-                        const Text(
-                          '対象レベル: ',
-                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                        ),
-                        const SizedBox(width: 12),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                          decoration: BoxDecoration(
-                            border: Border.all(color: Colors.grey.shade400),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: DropdownButtonHideUnderline(
-                            child: DropdownButton<int>(
-                              value: _selectedLevel,
-                              items: List.generate(20, (index) => index + 1).map((lvl) {
-                                return DropdownMenuItem<int>(
-                                  value: lvl,
-                                  child: Text('Lv.$lvl', style: const TextStyle(fontWeight: FontWeight.bold)),
-                                );
-                              }).toList(),
-                              onChanged: _onLevelChanged,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-                    TextField(
-                      controller: _titleController,
-                      decoration: InputDecoration(
-                        labelText: 'Lv.$_selectedLevel の称号名',
-                        hintText: '例: 凄腕クリエイター',
-                        border: const OutlineInputBorder(),
-                        prefixIcon: const Icon(Icons.military_tech, color: Colors.amber),
-                      ),
-                    ),
-                  ],
-                ),
+        ),
+        child: Scaffold(
+          backgroundColor: Colors.transparent,
+          appBar: AppBar(
+            backgroundColor: Colors.white.withOpacity(0.9),
+            elevation: 0,
+            centerTitle: true,
+            leading: IconButton(
+              icon: const Icon(Icons.arrow_back, color: Color(0xFF04044C)),
+              onPressed: () => Navigator.pop(context),
+            ),
+            title: const Text(
+              '作業手順',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: Color(0xFF04044C),
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                height: 1.2,
               ),
             ),
-            const SizedBox(height: 24),
-            Card(
-              elevation: 2,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'ステップアップ目標編集',
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                    ),
-                    const SizedBox(height: 12),
-                    Row(
-                      children: [
-                        const Text('対象要素: ', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: Colors.indigo.shade50,
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(color: Colors.indigo.shade200),
-                          ),
-                          child: DropdownButtonHideUnderline(
-                            child: DropdownButton<String>(
-                              value: categories.contains(_selectedGoalCategory) ? _selectedGoalCategory : (categories.isNotEmpty ? categories.first : null),
-                              items: categories.map((cat) {
-                                return DropdownMenuItem<String>(
-                                  value: cat,
-                                  child: Text(cat, style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.indigo)),
-                                );
-                              }).toList(),
-                              onChanged: (val) {
-                                if (val != null) {
-                                  _syncCurrentControllersToData();
-                                  setState(() {
-                                    _selectedGoalCategory = val;
-                                  });
-                                }
-                              },
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    Row(
-                      children: [
-                        const Text('対象レベル: ', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: Colors.indigo.shade50,
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(color: Colors.indigo.shade200),
-                          ),
-                          child: DropdownButtonHideUnderline(
-                            child: DropdownButton<int>(
-                              value: _selectedGoalLevel,
-                              items: List.generate(20, (i) => i + 1).map((lvl) {
-                                return DropdownMenuItem<int>(
-                                  value: lvl,
-                                  child: Text('Lv.$lvl', style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.indigo)),
-                                );
-                              }).toList(),
-                              onChanged: (val) {
-                                if (val != null) {
-                                  _syncCurrentControllersToData();
-                                  setState(() {
-                                    _selectedGoalLevel = val;
-                                  });
-                                }
-                              },
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    ElevatedButton.icon(
-                      onPressed: _addGoal,
-                      icon: const Icon(Icons.add, size: 18),
-                      label: const Text('目標追加（入力欄を追加）'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.green.shade700,
-                        foregroundColor: Colors.white,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    const Text(
-                      '選択した要素とレベルに対応するステップアップ目標の内容と獲得SPを編集します。',
-                      style: TextStyle(color: Colors.grey, fontSize: 13),
-                    ),
-                    const SizedBox(height: 16),
-                    Builder(
-                      builder: (context) {
-                        final currentKey = _getGoalKey(_selectedGoalCategory, _selectedGoalLevel);
-                        final currentGoals = _categoryGoals[currentKey] ?? [];
-                        final tControllers = _goalTitleControllers[currentKey] ?? [];
-                        final sControllers = _goalSpControllers[currentKey] ?? [];
-
-                        if (currentGoals.isEmpty) {
-                          return const Padding(
-                            padding: EdgeInsets.all(16.0),
-                            child: Center(child: Text('目標が登録されていません')),
-                          );
-                        }
-
-                        return Column(
-                          children: List.generate(currentGoals.length, (index) {
-                            if (index >= tControllers.length || index >= sControllers.length) {
-                              return const SizedBox();
-                            }
-                            return Card(
-                              margin: const EdgeInsets.only(bottom: 12),
-                              color: Colors.grey.shade50,
-                              shape: RoundedRectangleBorder(
-                                side: BorderSide(color: Colors.grey.shade300),
-                                borderRadius: BorderRadius.circular(8),
+            bottom: TabBar(
+              labelColor: const Color(0xFF04044C),
+              unselectedLabelColor: Colors.black54,
+              indicatorColor: const Color(0xFF04044C),
+              labelStyle: const TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.bold,
+                height: 1.1,
+              ),
+              unselectedLabelStyle: const TextStyle(
+                fontSize: 10,
+                height: 1.1,
+              ),
+              onTap: (index) {
+                if (index != 2) {
+                  Navigator.pop(context);
+                }
+              },
+              tabs: const [
+                Tab(
+                  icon: Icon(Icons.people_alt_outlined),
+                  child: Text('個人データ\n一覧', textAlign: TextAlign.center),
+                ),
+                Tab(
+                  icon: Icon(Icons.analytics_outlined),
+                  child: Text('分析\n職員用メモ', textAlign: TextAlign.center),
+                ),
+                Tab(
+                  icon: Icon(Icons.app_settings_alt_outlined),
+                  child: Text('機能編集\n管理', textAlign: TextAlign.center),
+                ),
+                Tab(
+                  icon: Icon(Icons.import_export_outlined),
+                  child: Text('外部出力\n連携', textAlign: TextAlign.center),
+                ),
+              ],
+            ),
+          ),
+          body: TabBarView(
+            physics: const NeverScrollableScrollPhysics(),
+            children: [
+              const SizedBox(),
+              const SizedBox(),
+              Scaffold(
+                backgroundColor: Colors.transparent,
+                body: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Row(
+                            children: [
+                              IconButton(
+                                icon: const Icon(Icons.arrow_back, color: Color(0xFF04044C)),
+                                onPressed: () {
+                                  Navigator.pop(context);
+                                },
                               ),
-                              child: Padding(
-                                padding: const EdgeInsets.all(12.0),
-                                child: Column(
-                                  children: [
-                                    Row(
-                                      children: [
-                                        Text('目標 #${index + 1}', style: const TextStyle(fontWeight: FontWeight.bold)),
-                                        const Spacer(),
-                                        IconButton(
-                                          icon: const Icon(Icons.delete_outline, color: Colors.red),
-                                          onPressed: () => _removeGoal(index),
-                                        ),
-                                      ],
-                                    ),
-                                    const SizedBox(height: 8),
-                                    TextField(
-                                      controller: tControllers[index],
-                                      decoration: const InputDecoration(
-                                        labelText: 'ステップアップ目標内容',
-                                        border: OutlineInputBorder(),
-                                        isDense: true,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 8),
-                                    TextField(
-                                      controller: sControllers[index],
-                                      keyboardType: TextInputType.number,
-                                      decoration: const InputDecoration(
-                                        labelText: '獲得SP',
-                                        suffixText: 'SP',
-                                        border: OutlineInputBorder(),
-                                        isDense: true,
-                                      ),
-                                    ),
-                                  ],
+                              Text(
+                                'SP編集（${widget.selectedTask}）',
+                                style: const TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.bold,
+                                  color: Color(0xFF04044C),
                                 ),
                               ),
-                            );
-                          }),
-                        );
-                      },
-                    ),
-                  ],
+                            ],
+                          ),
+                          ElevatedButton.icon(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF04044C),
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                            ),
+                            icon: const Icon(Icons.save, size: 18),
+                            label: const Text('保存', style: TextStyle(fontWeight: FontWeight.bold)),
+                            onPressed: () {
+                              _levelTitles[_selectedLevel] = _titleController.text;
+
+                              _categoryGoals.forEach((cat, goals) {
+                                final tControllers = _goalTitleControllers[cat] ?? [];
+                                final sControllers = _goalSpControllers[cat] ?? [];
+                                for (int i = 0; i < goals.length; i++) {
+                                  if (i < tControllers.length) goals[i]['title'] = tControllers[i].text;
+                                  if (i < sControllers.length) goals[i]['sp'] = int.tryParse(sControllers[i].text) ?? 20;
+                                }
+                              });
+
+                              final updatedSpData = Map<String, dynamic>.from(widget.initialSpData);
+                              updatedSpData['titleName'] = _levelTitles[_selectedLevel];
+                              updatedSpData['totalLevel'] = _selectedLevel;
+                              updatedSpData['levelTitles'] = _levelTitles;
+                              updatedSpData['categoryGoals'] = _categoryGoals;
+
+                              Navigator.pop(context, updatedSpData);
+                            },
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      Expanded(
+                        child: SingleChildScrollView(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Card(
+                                elevation: 2,
+                                color: Colors.white,
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                child: Padding(
+                                  padding: const EdgeInsets.all(16.0),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      const Text(
+                                        'レベル別 称号設定',
+                                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                                      ),
+                                      const SizedBox(height: 8),
+                                      const Text(
+                                        '編集したいレベルを選択し、対応する称号名を入力してください。',
+                                        style: TextStyle(color: Colors.grey, fontSize: 13),
+                                      ),
+                                      const SizedBox(height: 16),
+                                      Row(
+                                        children: [
+                                          const Text(
+                                            '対象レベル: ',
+                                            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                                          ),
+                                          const SizedBox(width: 12),
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                                            decoration: BoxDecoration(
+                                              border: Border.all(color: Colors.grey.shade400),
+                                              borderRadius: BorderRadius.circular(8),
+                                            ),
+                                            child: DropdownButtonHideUnderline(
+                                              child: DropdownButton<int>(
+                                                value: _selectedLevel,
+                                                items: List.generate(20, (index) => index + 1).map((lvl) {
+                                                  return DropdownMenuItem<int>(
+                                                    value: lvl,
+                                                    child: Text('Lv.$lvl', style: const TextStyle(fontWeight: FontWeight.bold)),
+                                                  );
+                                                }).toList(),
+                                                onChanged: _onLevelChanged,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 16),
+                                      TextField(
+                                        controller: _titleController,
+                                        decoration: InputDecoration(
+                                          labelText: 'Lv.$_selectedLevel の称号名',
+                                          hintText: '例: 凄腕クリエイター',
+                                          border: const OutlineInputBorder(),
+                                          filled: true,
+                                          fillColor: Colors.white,
+                                          prefixIcon: const Icon(Icons.military_tech, color: Colors.amber),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 24),
+                              Card(
+                                elevation: 2,
+                                color: Colors.white,
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                child: Padding(
+                                  padding: const EdgeInsets.all(16.0),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      const Text(
+                                        'ステップアップ目標編集',
+                                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                                      ),
+                                      const SizedBox(height: 12),
+                                      Row(
+                                        children: [
+                                          const Text('対象要素: ', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
+                                            decoration: BoxDecoration(
+                                              color: Colors.indigo.shade50,
+                                              borderRadius: BorderRadius.circular(8),
+                                              border: Border.all(color: Colors.indigo.shade200),
+                                            ),
+                                            child: DropdownButtonHideUnderline(
+                                              child: DropdownButton<String>(
+                                                value: categories.contains(_selectedGoalCategory) ? _selectedGoalCategory : (categories.isNotEmpty ? categories.first : null),
+                                                items: categories.map((cat) {
+                                                  return DropdownMenuItem<String>(
+                                                    value: cat,
+                                                    child: Text(cat, style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.indigo)),
+                                                  );
+                                                }).toList(),
+                                                onChanged: (val) {
+                                                  if (val != null) {
+                                                    _syncCurrentControllersToData();
+                                                    setState(() {
+                                                      _selectedGoalCategory = val;
+                                                    });
+                                                  }
+                                                },
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 8),
+                                      Row(
+                                        children: [
+                                          const Text('対象レベル: ', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
+                                            decoration: BoxDecoration(
+                                              color: Colors.indigo.shade50,
+                                              borderRadius: BorderRadius.circular(8),
+                                              border: Border.all(color: Colors.indigo.shade200),
+                                            ),
+                                            child: DropdownButtonHideUnderline(
+                                              child: DropdownButton<int>(
+                                                value: _selectedGoalLevel,
+                                                items: List.generate(20, (i) => i + 1).map((lvl) {
+                                                  return DropdownMenuItem<int>(
+                                                    value: lvl,
+                                                    child: Text('Lv.$lvl', style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.indigo)),
+                                                  );
+                                                }).toList(),
+                                                onChanged: (val) {
+                                                  if (val != null) {
+                                                    _syncCurrentControllersToData();
+                                                    setState(() {
+                                                      _selectedGoalLevel = val;
+                                                    });
+                                                  }
+                                                },
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 12),
+                                      ElevatedButton.icon(
+                                        onPressed: _addGoal,
+                                        icon: const Icon(Icons.add, size: 18),
+                                        label: const Text('目標追加（入力欄を追加）'),
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: Colors.green.shade700,
+                                          foregroundColor: Colors.white,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 12),
+                                      const Text(
+                                        '選択した要素とレベルに対応するステップアップ目標の内容と獲得SPを編集します。',
+                                        style: TextStyle(color: Colors.grey, fontSize: 13),
+                                      ),
+                                      const SizedBox(height: 16),
+                                      Builder(
+                                        builder: (context) {
+                                          final currentKey = _getGoalKey(_selectedGoalCategory, _selectedGoalLevel);
+                                          final currentGoals = _categoryGoals[currentKey] ?? [];
+                                          final tControllers = _goalTitleControllers[currentKey] ?? [];
+                                          final sControllers = _goalSpControllers[currentKey] ?? [];
+
+                                          if (currentGoals.isEmpty) {
+                                            return const Padding(
+                                              padding: EdgeInsets.all(16.0),
+                                              child: Center(child: Text('目標が登録されていません')),
+                                            );
+                                          }
+
+                                          return Column(
+                                            children: List.generate(currentGoals.length, (index) {
+                                              if (index >= tControllers.length || index >= sControllers.length) {
+                                                return const SizedBox();
+                                              }
+                                              return Card(
+                                                margin: const EdgeInsets.only(bottom: 12),
+                                                color: Colors.grey.shade50,
+                                                shape: RoundedRectangleBorder(
+                                                  side: BorderSide(color: Colors.grey.shade300),
+                                                  borderRadius: BorderRadius.circular(8),
+                                                ),
+                                                child: Padding(
+                                                  padding: const EdgeInsets.all(12.0),
+                                                  child: Column(
+                                                    children: [
+                                                      Row(
+                                                        children: [
+                                                          Text('目標 #${index + 1}', style: const TextStyle(fontWeight: FontWeight.bold)),
+                                                          const Spacer(),
+                                                          IconButton(
+                                                            icon: const Icon(Icons.delete_outline, color: Colors.red),
+                                                            onPressed: () => _removeGoal(index),
+                                                          ),
+                                                        ],
+                                                      ),
+                                                      const SizedBox(height: 8),
+                                                      TextField(
+                                                        controller: tControllers[index],
+                                                        decoration: const InputDecoration(
+                                                          labelText: 'ステップアップ目標内容',
+                                                          border: OutlineInputBorder(),
+                                                          isDense: true,
+                                                          filled: true,
+                                                          fillColor: Colors.white,
+                                                        ),
+                                                      ),
+                                                      const SizedBox(height: 8),
+                                                      TextField(
+                                                        controller: sControllers[index],
+                                                        keyboardType: TextInputType.number,
+                                                        decoration: const InputDecoration(
+                                                          labelText: '獲得SP',
+                                                          suffixText: 'SP',
+                                                          border: OutlineInputBorder(),
+                                                          isDense: true,
+                                                          filled: true,
+                                                          fillColor: Colors.white,
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                ),
+                                              );
+                                            }),
+                                          );
+                                        },
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
-            ),
-          ],
+              const SizedBox(),
+            ],
+          ),
         ),
       ),
     );
@@ -3846,8 +4731,19 @@ class _BatonTouchPageState extends State<BatonTouchPage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('バトンタッチ'),
+        title: const Text(
+          'バトンタッチ',
+          style: TextStyle(
+            color: Color(0xFF1A1A1A),
+            fontWeight: FontWeight.bold,
+            fontSize: 20,
+          ),
+        ),
         backgroundColor: Colors.white,
+        surfaceTintColor: Colors.white,
+        elevation: 0,
+        centerTitle: true,
+        toolbarHeight: 56.0,
       ),
       body: Container(
         width: double.infinity,
@@ -3859,8 +4755,10 @@ class _BatonTouchPageState extends State<BatonTouchPage> {
           ),
         ),
         child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
           child: Column(
             children: [
+              buildWorkGuideUserHeader(context),
               const SizedBox(height: 40),
               // 画面上部に配置される大きな「バトンタッチ」ボタン
               ElevatedButton(
@@ -4054,8 +4952,19 @@ class BatonReceivePage extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('バトンを受け取る'),
+        title: const Text(
+          'バトンを受け取る',
+          style: TextStyle(
+            color: Color(0xFF1A1A1A),
+            fontWeight: FontWeight.bold,
+            fontSize: 20,
+          ),
+        ),
         backgroundColor: Colors.white,
+        surfaceTintColor: Colors.white,
+        elevation: 0,
+        centerTitle: true,
+        toolbarHeight: 56.0,
       ),
       body: Container(
         width: double.infinity,
@@ -4070,8 +4979,10 @@ class BatonReceivePage extends StatelessWidget {
           ),
         ),
         child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
           child: Column(
             children: [
+              buildWorkGuideUserHeader(context),
               const SizedBox(height: 32),
               const Text(
                 '現在の進捗',
@@ -4911,22 +5822,41 @@ class _SpAchievementsScreenState extends State<SpAchievementsScreen> with Single
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('できたこと実績'),
+        title: const Text(
+          'できたこと実績',
+          style: TextStyle(
+            color: Color(0xFF1A1A1A),
+            fontWeight: FontWeight.bold,
+            fontSize: 20,
+          ),
+        ),
+        backgroundColor: Colors.white,
+        surfaceTintColor: Colors.white,
+        elevation: 0,
         centerTitle: true,
+        toolbarHeight: 56.0,
       ),
       body: Container(
+        width: double.infinity,
+        height: double.infinity,
         decoration: const BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [Color(0xFFFFFFFF), Color(0xFFECEFF1)],
+            colors: [Color(0xFFFFFFFF), Color(0xFFBCBCE8)],
           ),
         ),
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24.0),
+          physics: const AlwaysScrollableScrollPhysics(),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              buildWorkGuideUserHeader(context),
+              Padding(
+                padding: const EdgeInsets.all(24.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
               // 1. 称号タイル
               _buildHeaderCard(totalSp),
               const SizedBox(height: 24),
@@ -4978,8 +5908,11 @@ class _SpAchievementsScreenState extends State<SpAchievementsScreen> with Single
             ],
           ),
         ),
-      ),
-    );
+      ],
+    ),
+  ),
+),
+);
   }
 
   Widget _buildHeaderCard(int totalSp) {

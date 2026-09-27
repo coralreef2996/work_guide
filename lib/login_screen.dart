@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'main.dart';
+import 'admin_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   final String appName;
@@ -29,11 +30,22 @@ class _LoginScreenState extends State<LoginScreen> {
   Widget build(BuildContext context) {
     final bool isAdmin = _isSelected[1];
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('${widget.appName} - ログイン'),
-        centerTitle: true,
+    return Container(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [Colors.white, Color(0xFFBCBCE8)],
+        ),
       ),
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        appBar: AppBar(
+          title: Text('${widget.appName} - ログイン'),
+          centerTitle: true,
+          backgroundColor: Colors.white.withOpacity(0.8),
+          elevation: 0,
+        ),
       body: Center(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24.0),
@@ -46,35 +58,41 @@ class _LoginScreenState extends State<LoginScreen> {
                 style: const TextStyle(
                   fontSize: 28,
                   fontWeight: FontWeight.bold,
-                  color: Colors.deepPurple,
+                  color: Color(0xFF04044C),
                 ),
               ),
               const SizedBox(height: 32),
 
               // 「利用者」と「管理者」の切り替えスイッチ
-              ToggleButtons(
-                isSelected: _isSelected,
-                onPressed: (int index) {
-                  setState(() {
-                    for (int i = 0; i < _isSelected.length; i++) {
-                      _isSelected[i] = i == index;
-                    }
-                  });
-                },
-                borderRadius: BorderRadius.circular(8.0),
-                constraints: const BoxConstraints(minWidth: 120, minHeight: 45),
-                selectedColor: Colors.white,
-                fillColor: Colors.deepPurple,
-                children: const [
-                  Text(
-                    '利用者',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                  ),
-                  Text(
-                    '管理者',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                  ),
-                ],
+              Container(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(8.0),
+                ),
+                child: ToggleButtons(
+                  isSelected: _isSelected,
+                  onPressed: (int index) {
+                    setState(() {
+                      for (int i = 0; i < _isSelected.length; i++) {
+                        _isSelected[i] = i == index;
+                      }
+                    });
+                  },
+                  borderRadius: BorderRadius.circular(8.0),
+                  constraints: const BoxConstraints(minWidth: 120, minHeight: 45),
+                  selectedColor: Colors.white,
+                  fillColor: const Color(0xFF04044C),
+                  children: const [
+                    Text(
+                      '利用者',
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    ),
+                    Text(
+                      '管理者',
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    ),
+                  ],
+                ),
               ),
               const SizedBox(height: 32),
 
@@ -90,6 +108,8 @@ class _LoginScreenState extends State<LoginScreen> {
               TextField(
                 controller: _idController,
                 decoration: const InputDecoration(
+                  filled: true,
+                  fillColor: Colors.white,
                   hintText: 'アカウント名またはメールアドレスを入力',
                   border: OutlineInputBorder(),
                   isDense: true,
@@ -110,6 +130,8 @@ class _LoginScreenState extends State<LoginScreen> {
                 controller: _passwordController,
                 obscureText: true,
                 decoration: const InputDecoration(
+                  filled: true,
+                  fillColor: Colors.white,
                   hintText: 'パスワードを入力',
                   border: OutlineInputBorder(),
                   isDense: true,
@@ -122,7 +144,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 children: [
                   Checkbox(
                     value: _autoLogin,
-                    activeColor: Colors.deepPurple,
+                    activeColor: const Color(0xFF04044C),
                     onChanged: (bool? value) {
                       setState(() {
                         _autoLogin = value ?? false;
@@ -146,7 +168,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 width: double.infinity,
                 child: ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.deepPurple,
+                    backgroundColor: const Color(0xFF04044C),
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 14),
                     shape: RoundedRectangleBorder(
@@ -158,7 +180,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       Navigator.pushReplacement(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => const AdminManagementScreen(),
+                          builder: (context) => const AdminHomeScreen(),
                         ),
                       );
                     } else {
@@ -180,6 +202,9 @@ class _LoginScreenState extends State<LoginScreen> {
 
               // パスワードを忘れた場合
               TextButton(
+                style: TextButton.styleFrom(
+                  foregroundColor: const Color(0xFF04044C),
+                ),
                 onPressed: () {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(content: Text('パスワード再設定メールを送信しました（ダミー）')),
@@ -193,6 +218,9 @@ class _LoginScreenState extends State<LoginScreen> {
                 const SizedBox(height: 24),
                 const Divider(),
                 TextButton.icon(
+                  style: TextButton.styleFrom(
+                    foregroundColor: const Color(0xFF04044C),
+                  ),
                   onPressed: () {
                     Navigator.push(
                       context,
@@ -204,12 +232,29 @@ class _LoginScreenState extends State<LoginScreen> {
                   icon: const Icon(Icons.developer_mode),
                   label: const Text('元の画面を表示 (デバッグ用)'),
                 ),
+                const SizedBox(height: 8),
+                TextButton.icon(
+                  style: TextButton.styleFrom(
+                    foregroundColor: const Color(0xFF04044C),
+                  ),
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const AdminManagementScreen(),
+                      ),
+                    );
+                  },
+                  icon: const Icon(Icons.edit_note),
+                  label: const Text('下書き管理画面'),
+                ),
               ],
             ],
           ),
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 }
 

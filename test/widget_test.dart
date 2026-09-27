@@ -14,7 +14,9 @@ void main() {
     // Build our app and trigger a frame.
     await tester.pumpWidget(const JobExplanationApp());
 
-    // Verify that our app shows the task selection screen title.
-    expect(find.text('作業を選択'), findsOneWidget);
+    // Verify that login screen is displayed.
+    expect(find.text('作業手順 - ログイン'), findsOneWidget);
+    expect(find.text('利用者'), findsOneWidget);
+    expect(find.text('管理者'), findsOneWidget);
   });
 }
